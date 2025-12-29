@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager - Multi-View</title>
+    
+    <!-- INJECT_STYLES -->
+</head>
+<body>
+</head>
+<body>
+    <div class="app">
+        <!-- Project Sidebar - Full Height -->
+        <div class="project-sidebar" id="projectSidebar">
+            <div class="sidebar-header">
+                <span class="sidebar-title">Projects</span>
+                <button class="sidebar-toggle-btn" id="sidebarToggleBtn">◀</button>
+            </div>
+            <div class="sidebar-content">
+                <div class="sidebar-section">
+                    <div class="project-list" id="projectList">
+                        <!-- Dynamically populated -->
+                    </div>
+                    <button class="add-project-btn" id="addProjectBtn">+ New Project</button>
+                </div>
+                <div class="sidebar-section">
+                    <div class="sidebar-section-header">Teams</div>
+                    <div class="sidebar-placeholder">Team management coming soon</div>
+                </div>
+            </div>
+            <div class="sidebar-footer">
+                <div class="sidebar-section-header">Settings</div>
+                <div class="sidebar-settings">
+                    <button class="sidebar-btn" id="settingsBtn">⚙️ Preferences</button>
+                    <button class="sidebar-btn" id="exportDataBtn">📥 Export</button>
+                    <button class="sidebar-btn" id="importDataBtn">📤 Import</button>
+                    <input type="file" id="sidebarImportInput" accept=".json" style="display: none;">
+                </div>
+            </div>
+        </div>
+
+        <div class="main-area">
+            <div class="toolbar">
+                <div class="toolbar-section">
+                    <span class="toolbar-label">Modes</span>
+                    <div class="view-switcher">
+                        <button class="view-btn active" data-view="outline">📋 Outline</button>
+                        <button class="view-btn" data-view="kanban">📊 Kanban</button>
+                        <button class="view-btn" data-view="gantt">📅 Gantt</button>
+                        <button class="view-btn" data-view="mindmap">🧠 Mind Map</button>
+                    </div>
+                </div>
+
+                <div class="toolbar-right">
+                    <div class="api-status" id="apiStatus" title="Local API status">
+                        <span class="api-status-dot" id="apiStatusDot"></span>
+                        <span class="api-status-text" id="apiStatusText">API: Checking</span>
+                    </div>
+                    <button class="dark-mode-toggle" id="darkModeToggle" title="Toggle Dark Mode">🌙</button>
+                </div>
+            </div>
+
+            <!-- Settings Pane - View-Specific Controls -->
+            <div class="settings-pane" id="settingsPane">
+                <span class="toolbar-label">Filters</span>
+                <!-- Content will be dynamically populated based on current view -->
+            </div>
+
+            <div class="link-mode-banner" id="linkModeBanner">
+                🔗 Link Mode Active: Click a task to set as source, then click another to create dependency
+            </div>
+
+            <div class="link-mode-banner" id="relateLinkBanner">
+                🔗 Relate Mode Active: Click a task to set as first, then click another to create relation
+            </div>
+
+            <div class="main-content">
+                <div class="view-container" id="viewContainer"></div>
+            </div>
+        </div>
+
+        <button class="add-task-btn" id="addTaskBtn">+</button>
+    </div>
+
+    <!-- Detail Panel -->
+    <div class="detail-panel" id="detailPanel"></div>
+
+    <!-- Add Task Modal -->
+    <div class="modal" id="addTaskModal">
+        <div class="modal-content">
+            <div class="modal-header">Add New Task</div>
+            
+            <div class="detail-field">
+                <div class="detail-label">Task Title</div>
+                <input type="text" class="detail-input" id="newTaskTitle" placeholder="Enter task title">
+            </div>
+
+            <div class="detail-field">
+                <div class="detail-label">Description</div>
+                <textarea class="detail-input detail-textarea" id="newTaskDescription" placeholder="Optional description"></textarea>
+            </div>
+
+            <div class="detail-field">
+                <div class="detail-label">Parent Task</div>
+                <select class="detail-select" id="newTaskParent">
+                    <option value="">None (Top Level)</option>
+                </select>
+            </div>
+
+            <div class="detail-actions">
+                <button class="btn btn-primary" id="createTask">Create Task</button>
+                <button class="btn btn-secondary" id="cancelModal">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Node Modal (for Mind Map) -->
+    <div class="modal" id="nodeModal">
+        <div class="modal-content" id="nodeModalContent">
+        </div>
+    </div>
+
+    <!-- Global Settings Modal -->
+    <div class="modal" id="globalSettingsModal">
+        <div class="modal-content settings-modal-content">
+            <div class="modal-header">
+                ⚙️ Global Settings
+                <button class="close-modal-btn" id="closeSettingsModal">×</button>
+            </div>
+
+            <div class="settings-tabs">
+                <button class="settings-tab active" data-tab="behavior">Behavior</button>
+                <button class="settings-tab" data-tab="icons">Icons & Emojis</button>
+            </div>
+
+            <div class="settings-tab-content">
+                <!-- Behavior Tab -->
+                <div class="settings-tab-panel active" data-panel="behavior">
+                    <div class="settings-section">
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                <input type="checkbox" id="setting-filterToggleBehavior" class="setting-checkbox">
+                                <span>Filter Toggle Behavior</span>
+                            </label>
+                            <div class="setting-description">Allow deselecting filters (click active filter to show all)</div>
+                        </div>
+
+                        <div class="setting-item">
+                            <label class="setting-label">
+                                <input type="checkbox" id="setting-autoSave" class="setting-checkbox">
+                                <span>Auto-Save</span>
+                            </label>
+                            <div class="setting-description">Automatically save changes</div>
+                        </div>
+
+                        <div class="setting-item">
+                            <div class="setting-label-text">Default View</div>
+                            <select id="setting-defaultView" class="setting-select">
+                                <option value="outline">📋 Outline</option>
+                                <option value="kanban">📊 Kanban</option>
+                                <option value="gantt">📅 Gantt</option>
+                                <option value="mindmap">🧠 Mind Map</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Icons & Emojis Tab -->
+                <div class="settings-tab-panel" data-panel="icons">
+                    <div class="settings-section">
+                        <div class="setting-subsection-title">Status Icons</div>
+
+                        <div class="setting-item">
+                            <label class="setting-label-text">Todo Icon</label>
+                            <input type="text" id="setting-icon-todo" class="setting-input" value="○" maxlength="2">
+                        </div>
+
+                        <div class="setting-item">
+                            <label class="setting-label-text">In Progress Icon</label>
+                            <input type="text" id="setting-icon-in-progress" class="setting-input" value="⚡" maxlength="2">
+                        </div>
+
+                        <div class="setting-item">
+                            <label class="setting-label-text">Review Icon</label>
+                            <input type="text" id="setting-icon-review" class="setting-input" value="👁" maxlength="2">
+                        </div>
+
+                        <div class="setting-item">
+                            <label class="setting-label-text">Done Icon</label>
+                            <input type="text" id="setting-icon-done" class="setting-input" value="✓" maxlength="2">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="detail-actions">
+                <div class="settings-import">
+                    <button class="btn btn-secondary" id="settingsImportBtn">Import JSON</button>
+                    <input type="file" id="settingsImportInput" accept=".json" style="display: none;">
+                </div>
+                <button class="btn btn-primary" id="saveSettings">Save Settings</button>
+                <button class="btn btn-secondary" id="resetSettings">Reset to Defaults</button>
+                <button class="btn btn-secondary" id="cancelSettings">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    
+
+    <!-- INJECT_SCRIPTS -->
+</body>
+</html>

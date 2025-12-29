@@ -1,0 +1,1022 @@
+{
+  "version": "1.0",
+  "exportDate": "2025-12-26T07:34:15.469Z",
+  "tasks": [
+    {
+      "id": "102",
+      "title": "Features",
+      "description": "",
+      "metadata": {
+        "status": "todo",
+        "priority": "medium",
+        "assignee": "",
+        "startDate": "",
+        "endDate": ""
+      },
+      "children": [
+        {
+          "id": "103",
+          "title": "ALL",
+          "description": "",
+          "metadata": {
+            "status": "todo",
+            "priority": "medium",
+            "assignee": "",
+            "startDate": "",
+            "endDate": ""
+          },
+          "children": [
+            {
+              "id": "118",
+              "title": "Calendar view send to outlook?",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "low",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "166",
+              "title": "Calendar view for assigning and reminders and start and end date",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "176",
+              "title": "Document view?",
+              "description": "summarize project and be able to add notes, maybe lean into ai.",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "168",
+              "title": "mobile view or app",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "low",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "167",
+              "title": "ai chat option to generate project plan based on language, connect your model",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "low",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "165",
+              "title": "assign parent to task via modal",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "119",
+              "title": "Parent color grouping",
+              "description": "located in global settings. parent taskrow + single border around all parented tasks. any subsequent parents are slightly lighter, children are lightest",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "137",
+              "title": "smooth animations",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "low",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "138",
+              "title": "dark mode optimize theme",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "139",
+              "title": "assignments config",
+              "description": "config page and view page. config for setting defaults and setting up teams and assigning resources. maybe exists at project level?",
+              "metadata": {
+                "status": "in-progress",
+                "priority": "high",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "181",
+              "title": "formatting for task display",
+              "description": "parent color background",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "174",
+              "title": "badges display for sort, assignee, priority visibility setting",
+              "description": "toggle to show on each view",
+              "metadata": {
+                "status": "done",
+                "priority": "high",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "140",
+              "title": "backend to store data and settings etc.",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "low",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "141",
+              "title": "share plans",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "low",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "142",
+              "title": "user permissions",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "low",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "146",
+              "title": "import export option for excel which is flattened json",
+              "description": "only works for outline not for mind map",
+              "metadata": {
+                "status": "todo",
+                "priority": "low",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "147",
+              "title": "keybind config options",
+              "description": "changing statuses",
+              "metadata": {
+                "status": "todo",
+                "priority": "low",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "157",
+              "title": "ui options for undo redo etc.",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "low",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "158",
+              "title": "help page for how to use",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "low",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "149",
+              "title": "kanban store sub priority on task, grouped by highest level",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "high",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "153",
+              "title": "api to add tasks, update tasks, get tasks",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "low",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "154",
+              "title": "mcp to use api for ai development task management",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "low",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "155",
+              "title": "login",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "low",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "156",
+              "title": "project grouping and menu navigation",
+              "description": "",
+              "metadata": {
+                "status": "in-progress",
+                "priority": "high",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "104",
+          "title": "Outline",
+          "description": "",
+          "metadata": {
+            "status": "todo",
+            "priority": "medium",
+            "assignee": "",
+            "startDate": "",
+            "endDate": ""
+          },
+          "children": [
+            {
+              "id": "114",
+              "title": "Start typing to edit text in selected row or a hotkey to inline edit",
+              "description": "toggleable",
+              "metadata": {
+                "status": "done",
+                "priority": "high",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "115",
+              "title": "arrow key to navigate doesn't always work",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "117",
+              "title": "description should display more like a sub bullet or in italics, not like a sub task",
+              "description": "",
+              "metadata": {
+                "status": "done",
+                "priority": "high",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "150",
+              "title": "editing description should be in the inline, and displayed as a note",
+              "description": "",
+              "metadata": {
+                "status": "done",
+                "priority": "high",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "116",
+              "title": "selecting right of task always opens up inline editing",
+              "description": "",
+              "metadata": {
+                "status": "done",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "121",
+              "title": "drag task row to different parent or sub parent",
+              "description": "copy paste functionality instead",
+              "metadata": {
+                "status": "done",
+                "priority": "high",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "126",
+              "title": "parent color block background - wait for parent vs project clarity",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "164",
+              "title": "assignee should be a dropdown based off config",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "171",
+              "title": "assignment filter",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "173",
+              "title": "dependencies",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "178",
+              "title": "search task should search note too",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "105",
+          "title": "Kanban",
+          "description": "",
+          "metadata": {
+            "status": "todo",
+            "priority": "medium",
+            "assignee": "",
+            "startDate": "",
+            "endDate": ""
+          },
+          "children": [
+            {
+              "id": "122",
+              "title": "parent header label on card should match parent theme color palette",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "high",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "161",
+              "title": "priority mode, where you can drag items into low medium high",
+              "description": "",
+              "metadata": {
+                "status": "done",
+                "priority": "high",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "148",
+              "title": "add task by clicking below task",
+              "description": "requires parent assignment",
+              "metadata": {
+                "status": "review",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "162",
+              "title": "assignment mode, where you can drag items to teams or resources",
+              "description": "",
+              "metadata": {
+                "status": "in-progress",
+                "priority": "high",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "151",
+              "title": "sort by task order",
+              "description": "should be in addition to priority sort",
+              "metadata": {
+                "status": "todo",
+                "priority": "high",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "172",
+              "title": "assignment filter",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "106",
+          "title": "Gantt",
+          "description": "",
+          "metadata": {
+            "status": "todo",
+            "priority": "medium",
+            "assignee": "",
+            "startDate": "",
+            "endDate": ""
+          },
+          "children": [
+            {
+              "id": "127",
+              "title": "bar partially filled based on completion status",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "107",
+          "title": "Mind Map",
+          "description": "",
+          "metadata": {
+            "status": "todo",
+            "priority": "medium",
+            "assignee": "",
+            "startDate": "",
+            "endDate": ""
+          },
+          "children": [
+            {
+              "id": "131",
+              "title": "zoom scroll with mouse",
+              "description": "",
+              "metadata": {
+                "status": "review",
+                "priority": "high",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "132",
+              "title": "mini map for navigation",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "133",
+              "title": "condense and expand shortcut to bring nodes closer together",
+              "description": "next to zoom buttons",
+              "metadata": {
+                "status": "todo",
+                "priority": "high",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "134",
+              "title": "parent filtering/see multiple parents in one map",
+              "description": "",
+              "metadata": {
+                "status": "review",
+                "priority": "high",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "135",
+              "title": "save radial coordinates per node",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "143",
+              "title": "line style options",
+              "description": "straight or angled",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "175",
+              "title": "process flow mode?",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "108",
+      "title": "Bugs",
+      "description": "",
+      "metadata": {
+        "status": "todo",
+        "priority": "medium",
+        "assignee": "",
+        "startDate": "",
+        "endDate": ""
+      },
+      "children": [
+        {
+          "id": "109",
+          "title": "ALL",
+          "description": "",
+          "metadata": {
+            "status": "todo",
+            "priority": "medium",
+            "assignee": "",
+            "startDate": "",
+            "endDate": ""
+          },
+          "children": [
+            {
+              "id": "130",
+              "title": "global save settings shouldn't close entire modal",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "high",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "169",
+              "title": "auto save edit modal modifications",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "high",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "144",
+              "title": "default view always shows currently selected view",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "179",
+              "title": "edit modal doesnt always show when you click tasks throughout views",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "145",
+              "title": "parent filter shows wrong number",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "111",
+          "title": "Kanban",
+          "description": "",
+          "metadata": {
+            "status": "todo",
+            "priority": "medium",
+            "assignee": "",
+            "startDate": "",
+            "endDate": ""
+          },
+          "children": [
+            {
+              "id": "125",
+              "title": "only lowest level sub tasks should show, no parent tasks",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "high",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "177",
+              "title": "filter parent does not work",
+              "description": "",
+              "metadata": {
+                "status": "review",
+                "priority": "high",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "112",
+          "title": "Gantt",
+          "description": "",
+          "metadata": {
+            "status": "todo",
+            "priority": "medium",
+            "assignee": "",
+            "startDate": "",
+            "endDate": ""
+          },
+          "children": [
+            {
+              "id": "128",
+              "title": "edit modal should show if bar clicked",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "high",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "152",
+              "title": "vertically align the tasks horizontal lines to date grid horizontal lines",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "high",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "113",
+          "title": "Mind Map",
+          "description": "",
+          "metadata": {
+            "status": "todo",
+            "priority": "medium",
+            "assignee": "",
+            "startDate": "",
+            "endDate": ""
+          },
+          "children": [
+            {
+              "id": "160",
+              "title": "line doesn't always connect in certain circumstances",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "180",
+              "title": "minimum node padding",
+              "description": "",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "110",
+          "title": "Outline",
+          "description": "",
+          "metadata": {
+            "status": "todo",
+            "priority": "medium",
+            "assignee": "",
+            "startDate": "",
+            "endDate": ""
+          },
+          "children": [
+            {
+              "id": "124",
+              "title": "hitting tab when new task entered and text editing goes to next item",
+              "description": "",
+              "metadata": {
+                "status": "review",
+                "priority": "high",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            },
+            {
+              "id": "182",
+              "title": "add new task inserts not always below selected task",
+              "description": "maybe something with priority sort",
+              "metadata": {
+                "status": "todo",
+                "priority": "medium",
+                "assignee": "",
+                "startDate": "",
+                "endDate": ""
+              },
+              "children": []
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "nextId": 183,
+  "dependencies": {
+    "1-2-1": [
+      "1-1-2"
+    ],
+    "1-3-1": [
+      "1-2-2"
+    ]
+  },
+  "settings": {
+    "filterToggleBehavior": true,
+    "mindMapLineStyle": "straight",
+    "showDescriptionsOnNodes": false,
+    "defaultView": "kanban",
+    "darkMode": false,
+    "autoSave": true,
+    "outline": {
+      "showDescriptions": false,
+      "indentSize": 20,
+      "checkboxMode": false,
+      "sortBy": "default"
+    },
+    "kanban": {
+      "cardSize": "normal",
+      "columnOrder": [
+        "todo",
+        "in-progress",
+        "review",
+        "done"
+      ],
+      "showMetadata": true
+    },
+    "gantt": {
+      "dateRange": "month",
+      "showDependencyLines": false,
+      "zoomLevel": 1
+    },
+    "mindmap": {
+      "layoutMode": "tree",
+      "nodeSize": "medium"
+    }
+  }
+}

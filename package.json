@@ -1,0 +1,18 @@
+{
+  "name": "task-manager",
+  "version": "1.0.0",
+  "main": "electron/main.js",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "api": "node server/api.js",
+    "start": "npm run build && electron .",
+    "rebuild:native": "npm rebuild better-sqlite3 --build-from-source"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "fastify": "^4.28.1"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0"
+  }
+}

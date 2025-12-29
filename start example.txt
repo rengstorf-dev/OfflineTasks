@@ -1,0 +1,66 @@
+I'm working on the Task Manager app.
+
+Search only as needed by keyword: 
+- CLAUDE_v2.md (high level project architecture)
+- 
+Rules:
+- /src is the source of truth
+- /dist is build output only (do not read or edit)
+- Do NOT scan the repo
+- Do NOT read files unless I name them
+- Search before reading
+- Ask before touching multiple modules
+- Prefer small diffs
+
+Task:
+- for the global settings modal, when i hit save settings it closes it. it should require me to hit cancel to close it.
+
+
+- when child gets promoted to parent via outdenting, and we're in a project, it should get auto assigned to the same project we're in. if we're not in a project, should go to unassigned.
+- for outline, sometimes clicking on rows (not the task text) opens up the inline editing. inline editing shouldn't open when not clicking on the task text.
+- for outline, there should only be 1 visual container per project, not multiple containers for separate parents under same project
+- for Kanban the scroll down on a category resets every time i drag a card from one category to another.
+- for the page, the left sidebar should expand to the top of the page, and the view and toolbar at the top should move to the right be able to be pinned to stay visible or unpinned to only show via hovering over. there should be a label for each toolbar that says "Modes" and "Filters"
+- for projects, allow ctrl click on left panel to select multiple. this will act like "all projects" behaviorally, so if i have 3 projects but only want to see 2 on the views like outline and kanban, i can do that.
+- add a "related id" entity to the data structure, and allow links to be established between tasks. add a button to all views to click and be able to see related tasks when filtered for related tasks. connect to existing filter/show toggle and follow same behavior. update json export if needed.
+- move global settings to left side pane at the bottom. remove mind map from global settings. move the status and priority color options to the project settings level. 
+- move dark mode toggle from global settings t top right of views bar
+
+
+- dark mode optimize colors
+
+- for mind map we should be able to create a new parent task and subsequent child tasks via the add task modal, clickable via an icon on the node.
+- for mind map the lines + style + edit layout buttons should be below the zoom in out and reset buttons.
+- for mind map add the show filter toggle from outline and recreate that behavior to filter for nodes by status.
+- for mind map, if a line should be angled, the lines should get angled at halfway between any task and subtask nodes
+- for mind map, allow in edit mode the lines and nodes to show "snap" when you're manually moving them
+
+- for json export the location of manually edited mind map nodes should be saved
+- for json export the project id should be first before the "id" of the task
+
+
+
+
+
+
+
+
+
+- notes view - markdown editor. essentially just tagging a section of notes to somewhere on the breadcrumb trail of a task.
+- folder - group projects into a folder. purely organizational to expand and collapse projects, like sql object explorer.
+- for the teams section in projects pane, similar to projects
+- recurring task
+
+- mobile app?
+- mcp?
+- ai chatbot(s) to form an idea and create tasks? like brainstormer -> planner -
+- use via claude code to update outstanding task list status or to get todos for the project.
+
+what would i primarily use this for?
+
+- work organize
+- ai development
+--
+- personal organize
+
+
