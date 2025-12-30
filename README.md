@@ -69,4 +69,4 @@ See `Architecture.md` for a deeper overview of the runtime flow and data model.
 See `CONTRIBUTING.md` for setup, testing, and pull request guidelines.
 
 ## License
-MIT. See `LICENSE`.
+PolyForm Noncommercial. See `LICENSE`.
