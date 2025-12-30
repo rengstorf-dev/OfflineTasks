@@ -21,6 +21,14 @@ const getUuid = () => {
     return `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 };
 
+const buildSyncFingerprint = (projects, tasks, related, dependencies) => {
+    try {
+        return JSON.stringify({ projects, tasks, related, dependencies });
+    } catch (error) {
+        return null;
+    }
+};
+
 const loadAppData = async (apiClient, store, settings) => {
     if (!apiClient) {
         return;
@@ -46,6 +54,11 @@ const loadAppData = async (apiClient, store, settings) => {
             apiClient.getRelated().catch(() => []),
             apiClient.getDependencies().catch(() => [])
         ]);
+
+        const fingerprint = buildSyncFingerprint(projects, tasks, related, dependencies);
+        if (fingerprint && store._lastSyncFingerprint === fingerprint) {
+            return;
+        }
 
         store.tasks = tasks;
         store.projects = projects;
@@ -112,6 +125,9 @@ const loadAppData = async (apiClient, store, settings) => {
             }
         }
 
+        if (fingerprint) {
+            store._lastSyncFingerprint = fingerprint;
+        }
         store.saveState();
         store.notify();
     } catch (error) {
@@ -129,4 +145,27 @@ const enableStoreSync = (apiClient, store, settings) => {
     if (settings) {
         settings.setApiClient(apiClient);
     }
+};
+
+const shouldSkipSync = () => {
+    const active = document.activeElement;
+    if (!active) return false;
+    if (active.isContentEditable) return true;
+    const tag = active.tagName ? active.tagName.toLowerCase() : '';
+    return tag === 'input' || tag === 'textarea' || tag === 'select';
+};
+
+const startStorePolling = (apiClient, store, settings, intervalMs = 5000) => {
+    if (!apiClient) {
+        return null;
+    }
+
+    const timer = setInterval(() => {
+        if (shouldSkipSync()) {
+            return;
+        }
+        loadAppData(apiClient, store, settings);
+    }, intervalMs);
+
+    return timer;
 };

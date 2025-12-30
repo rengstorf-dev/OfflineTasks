@@ -21,7 +21,7 @@ class ApiClient {
         return null;
     }
 
-    async request(method, path, body) {
+    async request(method, path, body, options = {}) {
         const token = await this.resolveToken();
         const headers = {
             'Content-Type': 'application/json'
@@ -31,11 +31,27 @@ class ApiClient {
             headers.Authorization = `Bearer ${token}`;
         }
 
-        const response = await fetch(`${this.baseUrl}${path}`, {
-            method,
-            headers,
-            body: body ? JSON.stringify(body) : undefined
-        });
+        const controller = typeof AbortController === 'function' ? new AbortController() : null;
+        const timeoutMs = options.timeoutMs;
+        let timeoutId = null;
+
+        if (controller && typeof timeoutMs === 'number' && timeoutMs > 0) {
+            timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        }
+
+        let response;
+        try {
+            response = await fetch(`${this.baseUrl}${path}`, {
+                method,
+                headers,
+                body: body ? JSON.stringify(body) : undefined,
+                signal: controller ? controller.signal : undefined
+            });
+        } finally {
+            if (timeoutId) {
+                clearTimeout(timeoutId);
+            }
+        }
 
         const isJson = response.headers.get('content-type')?.includes('application/json');
         const payload = isJson ? await response.json() : null;
@@ -72,7 +88,7 @@ class ApiClient {
     }
 
     async getHealth() {
-        return this.request('GET', '/health');
+        return this.request('GET', '/health', null, { timeoutMs: 3000 });
     }
 
     async getProjects() {

@@ -18,6 +18,9 @@ This guide reflects **`/src`**.
   - Settings stored in SQLite via local API (`server/settings`).
   - Tasks/projects/dependencies/related links stored in SQLite via local API.
   - Import/export uses API snapshots and UUID remapping.
+- MCP:
+  - `server/mcp/index.js` starts a StdIO MCP server for local AI tooling.
+  - MCP tools map directly to local HTTP API endpoints using shared token auth.
 - **Build process**: Run `node scripts/build.js` to compile `src/` into `dist/task-manager.html`
 
 ---
@@ -33,6 +36,7 @@ This guide reflects **`/src`**.
   - detail panel & modals are delegated to `src/ui/modals.js`.
   - **Project state persistence**: loads/saves `selectedProjectId` and `projectViewMode` to settings.
   - API status badge in toolbar (polls `/health`).
+  - periodic API polling to reflect external updates (MCP/CLI).
 
 ### State
 - `src/store.js` — **TaskStore** (single source of truth)
@@ -73,6 +77,18 @@ This guide reflects **`/src`**.
   - global settings modal (tabs)
   - **import/export JSON** (tasks, dependencies, **projects**, settings) — v1.1 format
   - toast helper
+
+### API + server
+- `src/api/client.js` — local API client, error reporting, health checks.
+- `src/api/store-sync.js` — API load on startup + periodic polling for external updates.
+- `server/api.js` — Fastify routes + auth.
+- `server/db.js` — SQLite bootstrap + migrations.
+- `server/repo/*.js` — DB access layer.
+- `server/mcp/index.js` — MCP server entrypoint (StdIO).
+- `server/mcp/tools.js` — MCP tool definitions + input validation.
+- `server/mcp/api-client.js` — MCP-side HTTP client (reads token from file/env).
+- `electron/main.js` — Electron window bootstrap + MCP spawn.
+- `electron/preload.js` — exposes `electronAPI.getToken()`.
 
 ### Views
 - `src/views/outline.js` — hierarchical outline editor

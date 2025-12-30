@@ -9,6 +9,7 @@
     "rebuild:native": "npm rebuild better-sqlite3 --build-from-source"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
     "better-sqlite3": "^9.4.3",
     "fastify": "^4.28.1"
   },

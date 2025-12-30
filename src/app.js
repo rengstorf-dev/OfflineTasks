@@ -74,6 +74,7 @@ class App {
         this.store.subscribe(() => this.render());
         this.setupEventListeners();
         this.initApiStatus();
+        this.storeSyncTimer = startStorePolling(this.apiClient, this.store, this.settings);
         this.render();
     }
 
@@ -94,6 +95,7 @@ class App {
 
         const updateStatus = (state) => {
             statusDot.classList.remove('ok', 'error');
+            this.apiStatusState = state;
             if (state === 'ok') {
                 statusText.textContent = 'API: Connected';
                 statusDot.classList.add('ok');
@@ -109,18 +111,12 @@ class App {
             updateStatus('checking');
             this.apiClient.getHealth()
                 .then(() => {
-                    if (this.apiStatusState !== 'ok') {
-                        this.apiStatusState = 'ok';
-                        updateStatus('ok');
-                    }
+                    updateStatus('ok');
                 })
                 .catch((error) => {
-                    if (this.apiStatusState !== 'error') {
-                        this.apiStatusState = 'error';
-                        updateStatus('error');
-                        if (this.apiClient) {
-                            this.apiClient.reportError(error, 'API offline');
-                        }
+                    updateStatus('error');
+                    if (this.apiClient) {
+                        this.apiClient.reportError(error, 'API offline');
                     }
                 });
         };

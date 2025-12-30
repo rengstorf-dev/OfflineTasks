@@ -1,18 +1,22 @@
 I'm working on the Task Manager app.
 
-Search only as needed by keyword: 
-- CLAUDE_v2.md (high level project architecture)
-- 
+ 
 Rules:
 - /src is the source of truth
 - /dist is build output only (do not read or edit)
 - Do NOT scan the repo
-- Do NOT read files unless I name them
 - Search before reading
 - Ask before touching multiple modules
 - Prefer small diffs
 
+Search only as needed by keyword: 
+- CLAUDE_v2.md (high level project architecture for views and application)
+- Architecture.md (high level tooling, mentions persistence, fastify, essentials)
+
 Task:
+- read in the /docs folder Phase2.md. Review and lets proceed with implementation.
+
+
 - for the global settings modal, when i hit save settings it closes it. it should require me to hit cancel to close it.
 
 
