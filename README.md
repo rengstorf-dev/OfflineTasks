@@ -37,6 +37,7 @@ npm start
 - `npm run build` – bundle static HTML/JS to `dist/task-manager.html`
 - `npm run api` – start the Fastify API server
 - `npm start` – build then launch Electron
+- `npm run dist` – build installers into `release/`
 - `npm test` – run the test suite
 - `npm run rebuild:native` – rebuild native deps (e.g., `better-sqlite3`)
 
@@ -67,6 +68,9 @@ See `Architecture.md` for a deeper overview of the runtime flow and data model.
 
 ## Contributing
 See `CONTRIBUTING.md` for setup, testing, and pull request guidelines.
+
+## CI builds
+GitHub Actions builds macOS and Windows installers on every push to `main` and on manual runs. Artifacts are uploaded from the `release/` folder.
 
 ## License
 PolyForm Noncommercial. See `LICENSE`.

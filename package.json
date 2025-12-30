@@ -6,7 +6,8 @@
     "build": "node scripts/build.js",
     "api": "node server/api.js",
     "start": "npm run build && electron .",
-    "rebuild:native": "npm rebuild better-sqlite3 --build-from-source"
+    "rebuild:native": "npm rebuild better-sqlite3 --build-from-source",
+    "dist": "npm run build && electron-builder"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
@@ -14,6 +15,36 @@
     "fastify": "^4.28.1"
   },
   "devDependencies": {
-    "electron": "^30.0.0"
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.offlinetasks.app",
+    "productName": "OfflineTasks",
+    "asar": true,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**",
+      "server/**",
+      "src/**",
+      "dist/**",
+      "package.json",
+      "package-lock.json"
+    ],
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ]
+    },
+    "publish": "never"
   }
 }
