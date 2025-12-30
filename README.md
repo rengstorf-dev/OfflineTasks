@@ -10,7 +10,7 @@ Offline-first task manager built with Electron, a local Fastify API, and SQLite.
 - MCP server for local AI tooling integration
 
 ## Screenshot
-![Task Manager example](Example.png)
+![Task Manager example](ExampleProject.png)
 
 ## Quick start
 ```sh
