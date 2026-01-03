@@ -23,6 +23,13 @@ function showAddTaskModal(app, parentId = '') {
     }
 
     document.getElementById('addTaskModal').classList.add('visible');
+    setTimeout(() => {
+        const titleInput = document.getElementById('newTaskTitle');
+        if (titleInput) {
+            titleInput.focus();
+            titleInput.select();
+        }
+    }, 0);
 }
 
 function closeAddTaskModal() {

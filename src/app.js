@@ -191,6 +191,13 @@ class App {
             }
         });
 
+        document.getElementById('newTaskTitle').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('createTask').click();
+            }
+        });
+
         document.getElementById('cancelModal').addEventListener('click', () => {
             this.closeAddTaskModal();
         });
