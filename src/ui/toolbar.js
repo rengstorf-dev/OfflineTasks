@@ -528,13 +528,27 @@ function renderSettingsPane(app) {
             container.style.position = 'relative';
             container.style.display = 'inline-block';
 
-            // Get root-level tasks
-            const rootTasks = app.store.tasks;
+            // Get root-level tasks for the current project filter
+            const rootTasks = app.store.getFilteredTasks().filter(task => !task.parentId);
+            const rootTaskIds = new Set(rootTasks.map(task => task.id));
 
             // Initialize with all parents selected (only once)
             if (!app.store.parentFilterInitialized) {
                 rootTasks.forEach(task => app.store.selectedParents.add(task.id));
                 app.store.parentFilterInitialized = true;
+            } else {
+                let filteredSelected = new Set(
+                    [...app.store.selectedParents].filter(taskId => rootTaskIds.has(taskId))
+                );
+                if (filteredSelected.size === 0 && rootTasks.length > 0) {
+                    filteredSelected = new Set(rootTasks.map(task => task.id));
+                }
+                if (filteredSelected.size === 0) {
+                    // No parents available for this filter; disable parent filtering
+                    app.store.parentFilterInitialized = false;
+                } else {
+                    app.store.selectedParents = filteredSelected;
+                }
             }
 
             const allSelected = app.store.selectedParents.size === rootTasks.length;
