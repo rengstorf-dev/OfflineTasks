@@ -82,13 +82,14 @@ const updateTask = (db, id, updates) => {
     return null;
   }
 
+  const hasField = (key) => Object.prototype.hasOwnProperty.call(updates, key);
   const metadata = { ...existing.metadata, ...(updates.metadata || {}) };
   const next = {
-    title: updates.title ?? existing.title,
-    description: updates.description ?? existing.description,
-    projectId: updates.projectId ?? existing.projectId,
-    parentId: updates.parentId ?? existing.parentId,
-    sortIndex: updates.sortIndex ?? existing.sortIndex,
+    title: hasField('title') ? updates.title : existing.title,
+    description: hasField('description') ? updates.description : existing.description,
+    projectId: hasField('projectId') ? updates.projectId : existing.projectId,
+    parentId: hasField('parentId') ? updates.parentId : existing.parentId,
+    sortIndex: hasField('sortIndex') ? updates.sortIndex : existing.sortIndex,
     metadata,
   };
 

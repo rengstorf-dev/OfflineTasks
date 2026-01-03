@@ -45,15 +45,31 @@ function renderOutlineView(app, container) {
         const syncTaskPositions = (app, siblings, parentId) => {
             siblings.forEach((task, index) => {
                 task.sortIndex = index;
+                task.parentId = parentId || null;
                 if (app.apiClient) {
-                    app.apiClient.updateTask(task.id, {
+                    const payload = {
                         parentId: parentId || null,
                         sortIndex: index,
                         projectId: task.projectId || null
-                    }).catch((error) => {
-                        if (app.apiClient) {
-                            app.apiClient.reportError(error, 'Task reorder failed', { silent: true });
+                    };
+                    app.apiClient.updateTask(task.id, payload).catch((error) => {
+                        console.error('Task reorder failed', {
+                            taskId: task.id,
+                            payload,
+                            error
+                        });
+                        if (typeof showToast === 'function') {
+                            showToast(`Task reorder failed: ${error.message || 'Unknown error'}`);
                         }
+                        if (app.apiClient) {
+                            app.apiClient.reportError(error, 'Task reorder failed');
+                        }
+                    });
+                } else {
+                    console.warn('Task reorder skipped: API client unavailable', {
+                        taskId: task.id,
+                        parentId: parentId || null,
+                        sortIndex: index
                     });
                 }
             });
@@ -162,6 +178,214 @@ function renderOutlineView(app, container) {
             }
 
             app.store.notify();
+        };
+
+        const buildParentMap = (tasks, map = new Map(), parentId = null) => {
+            tasks.forEach(task => {
+                map.set(task.id, parentId);
+                if (task.children && task.children.length > 0) {
+                    buildParentMap(task.children, map, task.id);
+                }
+            });
+            return map;
+        };
+
+        const verifyReorderPersistence = (taskIds) => {
+            if (!app.apiClient || taskIds.length === 0) {
+                return;
+            }
+            const expectedParents = new Map();
+            taskIds.forEach((id) => {
+                const parent = app.store.findParent(id);
+                expectedParents.set(id, parent ? parent.id : null);
+            });
+
+            setTimeout(() => {
+                app.apiClient.getTasksTree()
+                    .then((tasks) => {
+                        const apiParents = buildParentMap(tasks);
+                        const mismatches = [];
+                        expectedParents.forEach((expectedParentId, taskId) => {
+                            const apiParentId = apiParents.get(taskId) ?? null;
+                            if (apiParentId !== expectedParentId) {
+                                mismatches.push({ taskId, expectedParentId, apiParentId });
+                            }
+                        });
+                        if (mismatches.length > 0) {
+                            console.warn('Task reorder persistence mismatch', mismatches);
+                            if (typeof showToast === 'function') {
+                                showToast('Task reorder did not persist (see console)');
+                            }
+                        }
+                    })
+                    .catch((error) => {
+                        console.warn('Task reorder verify failed', error);
+                    });
+            }, 500);
+        };
+
+        const getSelectedRootIdsInOrder = () => {
+            const selected = app.selectedTaskIds.size > 0
+                ? new Set(app.selectedTaskIds)
+                : new Set();
+            const allRows = Array.from(container.querySelectorAll('.task-row'));
+            const orderIndex = new Map(allRows.map((row, index) => [row.dataset.taskId, index]));
+            const ids = selected.size > 0 ? Array.from(selected) : [];
+            if (selected.size === 0 && app.lastSelectedTaskId) {
+                ids.push(app.lastSelectedTaskId);
+            }
+
+            const rootIds = ids.filter(id => {
+                let parent = app.store.findParent(id);
+                while (parent) {
+                    if (selected.has(parent.id)) return false;
+                    parent = app.store.findParent(parent.id);
+                }
+                return true;
+            });
+
+            rootIds.sort((a, b) => (orderIndex.get(a) ?? 0) - (orderIndex.get(b) ?? 0));
+            return rootIds;
+        };
+
+        const indentSelectedTasks = (selectedIds) => {
+            if (selectedIds.length === 0) return false;
+            const selectedSet = new Set(selectedIds);
+            const syncTargets = new Map();
+            let moved = false;
+            let saved = false;
+
+            const markSync = (siblings, parentId) => {
+                syncTargets.set(siblings, parentId ?? null);
+            };
+
+            selectedIds.forEach((taskId) => {
+                const parent = app.store.findParent(taskId);
+                const siblings = parent ? parent.children : app.store.tasks;
+                const currentIndex = siblings.findIndex(t => t.id === taskId);
+                if (currentIndex <= 0) return;
+
+                let prevIndex = currentIndex - 1;
+                while (prevIndex >= 0 && selectedSet.has(siblings[prevIndex].id)) {
+                    prevIndex -= 1;
+                }
+                if (prevIndex < 0) return;
+
+                const previousSibling = siblings[prevIndex];
+                const task = siblings[currentIndex];
+
+                if (!saved) {
+                    app.store.saveState();
+                    saved = true;
+                }
+
+                siblings.splice(currentIndex, 1);
+                if (!previousSibling.children) {
+                    previousSibling.children = [];
+                }
+                previousSibling.children.push(task);
+                delete task.projectId;
+
+                if (app.store.collapsed.has(previousSibling.id)) {
+                    app.store.collapsed.delete(previousSibling.id);
+                }
+
+                markSync(siblings, parent ? parent.id : null);
+                markSync(previousSibling.children, previousSibling.id);
+                moved = true;
+            });
+
+            if (moved) {
+                syncTargets.forEach((parentId, siblings) => {
+                    syncTaskPositions(app, siblings, parentId);
+                });
+            }
+
+            return moved;
+        };
+
+        const outdentSelectedTasks = (selectedIds) => {
+            if (selectedIds.length === 0) return false;
+            const selectedSet = new Set(selectedIds);
+            const syncTargets = new Map();
+            let moved = false;
+            let saved = false;
+
+            const markSync = (siblings, parentId) => {
+                syncTargets.set(siblings, parentId ?? null);
+            };
+
+            const parentGroups = new Map();
+            selectedIds.forEach((taskId) => {
+                const parent = app.store.findParent(taskId);
+                if (!parent) return;
+                if (!parentGroups.has(parent.id)) {
+                    parentGroups.set(parent.id, { parent, taskIds: [] });
+                }
+                parentGroups.get(parent.id).taskIds.push(taskId);
+            });
+
+            if (parentGroups.size === 0) return false;
+
+            parentGroups.forEach(({ parent, taskIds }) => {
+                const grandparent = app.store.findParent(parent.id);
+                const sourceSiblings = parent.children;
+                const targetSiblings = grandparent ? grandparent.children : app.store.tasks;
+                const parentIndexInTarget = targetSiblings.findIndex(t => t.id === parent.id);
+                if (parentIndexInTarget === -1) return;
+
+                const tasksToMove = taskIds
+                    .map(id => app.store.findTask(id))
+                    .filter(Boolean)
+                    .sort((a, b) => sourceSiblings.findIndex(t => t.id === a.id) - sourceSiblings.findIndex(t => t.id === b.id));
+
+                const tasksToRemove = [...tasksToMove].sort((a, b) =>
+                    sourceSiblings.findIndex(t => t.id === b.id) - sourceSiblings.findIndex(t => t.id === a.id)
+                );
+
+                if (!saved) {
+                    app.store.saveState();
+                    saved = true;
+                }
+
+                tasksToRemove.forEach(task => {
+                    const index = sourceSiblings.findIndex(t => t.id === task.id);
+                    if (index > -1) {
+                        sourceSiblings.splice(index, 1);
+                    }
+                });
+
+                tasksToMove.forEach((task) => {
+                    if (!grandparent) {
+                        if (app.store.projectViewMode === 'project' &&
+                            app.store.selectedProjectId && app.store.selectedProjectId !== 'unassigned') {
+                            task.projectId = app.store.selectedProjectId;
+                        } else if (parent.projectId) {
+                            task.projectId = parent.projectId;
+                        } else {
+                            delete task.projectId;
+                        }
+                    }
+                    if (!grandparent && app.store.parentFilterInitialized) {
+                        app.store.selectedParents.add(task.id);
+                    }
+                });
+
+                const insertIndex = parentIndexInTarget + 1;
+                targetSiblings.splice(insertIndex, 0, ...tasksToMove);
+
+                markSync(sourceSiblings, parent.id);
+                markSync(targetSiblings, grandparent ? grandparent.id : null);
+                moved = true;
+            });
+
+            if (moved) {
+                syncTargets.forEach((parentId, siblings) => {
+                    syncTaskPositions(app, siblings, parentId);
+                });
+            }
+
+            return moved;
         };
 
         const renderTask = (task, depth = 0) => {
@@ -623,6 +847,25 @@ function renderOutlineView(app, container) {
 
                 } else if (e.key === 'Tab' && !e.shiftKey) {
                     // Move task down one level in hierarchy (indent)
+                    const selectedRootIds = getSelectedRootIdsInOrder();
+                    if (selectedRootIds.length > 1) {
+                        const moved = indentSelectedTasks(selectedRootIds);
+                        if (moved) {
+                            app.lastSelectedTaskId = taskId;
+                            app.focusTaskAfterRender = taskId;
+                            app.store.notify();
+                            verifyReorderPersistence(selectedRootIds);
+                        } else {
+                            setTimeout(() => {
+                                const refocusRow = container.querySelector(`[data-task-id="${taskId}"]`);
+                                if (refocusRow) {
+                                    refocusRow.focus();
+                                    refocusRow.classList.add('selected');
+                                }
+                            }, 0);
+                        }
+                        return;
+                    }
                     // Find previous sibling to make this task its child
                     const parent = app.store.findParent(taskId);
                     const siblings = parent ? parent.children : app.store.tasks;
@@ -665,9 +908,37 @@ function renderOutlineView(app, container) {
                         }, 0);
                     }
                     // If currentIndex is 0 or no previous sibling, just do nothing (already prevented default)
+                    else {
+                        setTimeout(() => {
+                            const refocusRow = container.querySelector(`[data-task-id="${taskId}"]`);
+                            if (refocusRow) {
+                                refocusRow.focus();
+                                refocusRow.classList.add('selected');
+                            }
+                        }, 0);
+                    }
 
                 } else if (e.key === 'Tab' && e.shiftKey) {
                     // Move task up one level in hierarchy (outdent)
+                    const selectedRootIds = getSelectedRootIdsInOrder();
+                    if (selectedRootIds.length > 1) {
+                        const moved = outdentSelectedTasks(selectedRootIds);
+                        if (moved) {
+                            app.lastSelectedTaskId = taskId;
+                            app.focusTaskAfterRender = taskId;
+                            app.store.notify();
+                            verifyReorderPersistence(selectedRootIds);
+                        } else {
+                            setTimeout(() => {
+                                const refocusRow = container.querySelector(`[data-task-id="${taskId}"]`);
+                                if (refocusRow) {
+                                    refocusRow.focus();
+                                    refocusRow.classList.add('selected');
+                                }
+                            }, 0);
+                        }
+                        return;
+                    }
                     const parent = app.store.findParent(taskId);
                     if (parent) {
                         const grandparent = app.store.findParent(parent.id);
@@ -930,6 +1201,17 @@ function renderOutlineView(app, container) {
                 const rowToFocus = container.querySelector(`[data-task-id="${taskToFocus}"]`);
                 if (rowToFocus) {
                     rowToFocus.focus();
+                    if (app.selectedTaskIds && app.selectedTaskIds.size > 0) {
+                        container.querySelectorAll('.task-row').forEach(r => r.classList.remove('selected'));
+                        app.selectedTaskIds.forEach((id) => {
+                            const row = container.querySelector(`[data-task-id="${id}"]`);
+                            if (row) {
+                                row.classList.add('selected');
+                            }
+                        });
+                    } else {
+                        rowToFocus.classList.add('selected');
+                    }
                 }
             }, 0);
         }
