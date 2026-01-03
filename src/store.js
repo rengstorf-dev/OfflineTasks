@@ -233,6 +233,14 @@
                 return null;
             }
 
+            collectDescendantIds(task, set) {
+                if (!task || !task.children) return;
+                task.children.forEach(child => {
+                    set.add(child.id);
+                    this.collectDescendantIds(child, set);
+                });
+            }
+
             deleteTask(id, tasks = this.tasks) {
                 for (let i = 0; i < tasks.length; i++) {
                     if (tasks[i].id === id) {
@@ -377,9 +385,20 @@
                 };
 
                 // Get all related task IDs if filtering by related
-                const relatedIds = this.relatedFilterTaskId
-                    ? new Set([this.relatedFilterTaskId, ...this.getRelatedTasks(this.relatedFilterTaskId)])
-                    : null;
+                const relatedIds = this.relatedFilterTaskId ? new Set() : null;
+                if (relatedIds) {
+                    const baseRelatedIds = [
+                        this.relatedFilterTaskId,
+                        ...this.getRelatedTasks(this.relatedFilterTaskId)
+                    ];
+                    baseRelatedIds.forEach((id) => {
+                        relatedIds.add(id);
+                        const task = this.findTask(id);
+                        if (task) {
+                            this.collectDescendantIds(task, relatedIds);
+                        }
+                    });
+                }
 
                 const filterTasks = (tasks) => {
                     let filtered = tasks.map(task => {
