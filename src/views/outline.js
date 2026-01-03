@@ -46,6 +46,9 @@ function renderOutlineView(app, container) {
             siblings.forEach((task, index) => {
                 task.sortIndex = index;
                 task.parentId = parentId || null;
+                if (task._pendingCreate) {
+                    return;
+                }
                 if (app.apiClient) {
                     const payload = {
                         parentId: parentId || null,
@@ -92,6 +95,7 @@ function renderOutlineView(app, container) {
 
             return app.apiClient.createTask(payload)
                 .then(() => {
+                    task._pendingCreate = false;
                     if (!task.children || task.children.length === 0) {
                         return null;
                     }
@@ -787,6 +791,7 @@ function renderOutlineView(app, container) {
                     // Create new task object
                     const newTask = {
                         id: app.store.generateId(),
+                        _pendingCreate: true,
                         title: 'New Task',
                         description: '',
                         metadata: {
@@ -1297,6 +1302,7 @@ function renderOutlineView(app, container) {
                         const clone = JSON.parse(JSON.stringify(task));
                         const reassignIds = (t) => {
                             t.id = app.store.generateId();
+                            t._pendingCreate = true;
                             if (t.children) {
                                 t.children.forEach(reassignIds);
                             }
