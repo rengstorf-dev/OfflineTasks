@@ -310,9 +310,7 @@
 
                 const statuses = children.map(child => child?.metadata?.status || 'todo');
                 if (statuses.every(status => status === 'done')) return 'done';
-                if (statuses.some(status => status === 'in-progress')) return 'in-progress';
-                if (statuses.some(status => status === 'review')) return 'review';
-                if (statuses.some(status => status === 'todo')) return 'todo';
+                if (statuses.some(status => status !== 'todo')) return 'in-progress';
                 return 'todo';
             }
 
@@ -330,6 +328,31 @@
                 }
 
                 return updatedParents;
+            }
+
+            applyRollupStatuses(tasks = this.tasks) {
+                const updates = [];
+                const walk = (list) => {
+                    list.forEach((task) => {
+                        if (task.children && task.children.length > 0) {
+                            walk(task.children);
+                            const nextStatus = this.getRollupStatus(task.children);
+                            if (nextStatus && task.metadata.status !== nextStatus) {
+                                task.metadata.status = nextStatus;
+                                updates.push({ id: task.id, status: nextStatus });
+                            }
+                        }
+                    });
+                };
+                walk(tasks);
+                if (this.apiClient && updates.length > 0) {
+                    updates.forEach(({ id, status }) => {
+                        this.apiClient.updateTask(id, { metadata: { status } }).catch((error) => {
+                            this.apiClient.reportError(error, 'Parent status update failed', { silent: true });
+                        });
+                    });
+                }
+                return updates;
             }
 
             toggleCollapse(id) {

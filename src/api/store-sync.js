@@ -128,6 +128,7 @@ const loadAppData = async (apiClient, store, settings) => {
         if (fingerprint) {
             store._lastSyncFingerprint = fingerprint;
         }
+        store.applyRollupStatuses();
         store.saveState();
         store.notify();
     } catch (error) {

@@ -1135,6 +1135,7 @@ function renderOutlineView(app, container) {
                             updateTaskAndChildren(task, newStatus);
                             updateParentStatuses(taskId);
                             app.store.notify();
+                            app.store.applyRollupStatuses();
                         }
                         return; // Don't open detail panel
                     }
