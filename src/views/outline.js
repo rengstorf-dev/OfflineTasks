@@ -775,6 +775,10 @@ function renderOutlineView(app, container) {
                         app.selectedTaskIds.clear();
                         app.selectedTaskIds.add(nextTaskId);
                         app.lastSelectedTaskId = nextTaskId;
+                        const detailPanel = document.getElementById('detailPanel');
+                        if (detailPanel && detailPanel.classList.contains('visible')) {
+                            app.showDetailPanel(nextTaskId);
+                        }
                     }
                 } else if (e.key === 'ArrowUp') {
                     app.justExitedEditing = false; // Reset flag on navigation
@@ -790,6 +794,10 @@ function renderOutlineView(app, container) {
                         app.selectedTaskIds.clear();
                         app.selectedTaskIds.add(prevTaskId);
                         app.lastSelectedTaskId = prevTaskId;
+                        const detailPanel = document.getElementById('detailPanel');
+                        if (detailPanel && detailPanel.classList.contains('visible')) {
+                            app.showDetailPanel(prevTaskId);
+                        }
                     }
                 }
             });
