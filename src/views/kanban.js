@@ -157,7 +157,7 @@ function renderKanbanView(app, container) {
                             // Get project-specific colors (or defaults)
                             const taskColors = app.store.getTaskColors(task.id);
                             const priorityColor = taskColors.priorityColors[task.metadata.priority] || taskColors.priorityColors.medium;
-                            const priorityBorder = `border-left: 4px solid ${priorityColor};`;
+                            const priorityBorder = app.store.showPriorityInKanban ? `border-left: 4px solid ${priorityColor};` : '';
 
                             // Project color for breadcrumb highlight
                             const breadcrumbStyle = project
