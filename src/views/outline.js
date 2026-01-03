@@ -1171,11 +1171,16 @@ function renderOutlineView(app, container) {
                     if (e.target.dataset.toggleStatus) {
                         const task = app.store.findTask(taskId);
                         if (task) {
-                            const statusCycle = ['todo', 'in-progress', 'review', 'done'];
                             const currentStatus = task.metadata.status || 'todo';
-                            const currentIndex = statusCycle.indexOf(currentStatus);
-                            const newStatus = (e.ctrlKey || e.metaKey) ? 'done' :
-                                (statusCycle[currentIndex === -1 ? 0 : (currentIndex + 1) % statusCycle.length]);
+                            const nextStatusMap = {
+                                'todo': 'in-progress',
+                                'in-progress': 'review',
+                                'review': 'done',
+                                'done': 'todo'
+                            };
+                            const newStatus = (e.ctrlKey || e.metaKey)
+                                ? 'done'
+                                : (nextStatusMap[currentStatus] || 'in-progress');
 
                             // Recursive function to update task and all children
                             const updateTaskAndChildren = (t, status) => {
