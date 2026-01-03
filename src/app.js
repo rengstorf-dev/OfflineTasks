@@ -129,12 +129,36 @@ class App {
     }
 
     setupEventListeners() {
+        const captureFilters = () => ({
+            selectedFilters: new Set(this.store.selectedFilters),
+            searchQuery: this.store.searchQuery,
+            filterMode: this.store.filterMode,
+            relatedFilterTaskId: this.store.relatedFilterTaskId
+        });
+
+        const applyFilters = (filters) => {
+            const nextFilters = filters || {};
+            this.store.selectedFilters = new Set(nextFilters.selectedFilters || []);
+            this.store.searchQuery = nextFilters.searchQuery || '';
+            this.store.filterMode = nextFilters.filterMode || 'show';
+            this.store.relatedFilterTaskId = nextFilters.relatedFilterTaskId || null;
+        };
+
+        if (!this.store.viewFilters) {
+            this.store.viewFilters = {};
+        }
+
         // View switcher
         document.querySelectorAll('[data-view]').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('[data-view]').forEach(b => b.classList.remove('active'));
                 e.target.classList.add('active');
-                this.currentView = e.target.dataset.view;
+                const nextView = e.target.dataset.view;
+                if (nextView !== this.currentView) {
+                    this.store.viewFilters[this.currentView] = captureFilters();
+                    applyFilters(this.store.viewFilters[nextView]);
+                }
+                this.currentView = nextView;
                 // Save current view as default
                 this.settings.set('defaultView', this.currentView);
                 this.render();
