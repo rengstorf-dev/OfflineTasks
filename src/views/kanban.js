@@ -22,12 +22,17 @@ function renderKanbanView(app, container) {
                     'high': 'High'
                 },
                 field: 'priority'
+            },
+            assignee: {
+                columns: [],
+                names: {},
+                field: 'assignee'
             }
         };
 
         const currentMode = modes[app.kanbanMode];
-        const columns = currentMode.columns;
-        const columnNames = currentMode.names;
+        let columns = currentMode.columns;
+        let columnNames = currentMode.names;
         const fieldName = currentMode.field;
 
         // Get filtered tasks with _matches markers
@@ -56,6 +61,23 @@ function renderKanbanView(app, container) {
         };
 
         const leafTasks = getFlatLeafTasks(filteredTasks);
+
+        if (fieldName === 'assignee') {
+            const assignees = Array.from(new Set(
+                leafTasks
+                    .map(task => (task.metadata.assignee || '').trim())
+                    .filter(name => name)
+            )).sort((a, b) => a.localeCompare(b));
+            const hasUnassigned = leafTasks.some(task => !(task.metadata.assignee || '').trim());
+            columns = hasUnassigned ? ['__unassigned__', ...assignees] : assignees;
+            columnNames = {};
+            if (hasUnassigned) {
+                columnNames['__unassigned__'] = 'Unassigned';
+            }
+            assignees.forEach(name => {
+                columnNames[name] = name;
+            });
+        }
 
         // Helper to get breadcrumb path
         const getPath = (taskId) => {
@@ -87,7 +109,16 @@ function renderKanbanView(app, container) {
         };
 
         const columnsHtml = columns.map(columnValue => {
-            let tasks = leafTasks.filter(t => t.metadata[fieldName] === columnValue);
+            let tasks = leafTasks.filter(t => {
+                if (fieldName === 'assignee') {
+                    const assignee = (t.metadata.assignee || '').trim();
+                    if (columnValue === '__unassigned__') {
+                        return !assignee;
+                    }
+                    return assignee === columnValue;
+                }
+                return t.metadata[fieldName] === columnValue;
+            });
 
             // Sort based on kanbanSortMode
             if (app.store.kanbanSortMode === 'priority') {
@@ -242,8 +273,9 @@ function renderKanbanView(app, container) {
                 // Update the appropriate field based on mode (status or priority)
                 const task = app.store.findTask(taskId);
                 if (task) {
-                    task.metadata[field] = newValue;
-                    queueMetadataUpdate(taskId, { [field]: newValue });
+                    const nextValue = (field === 'assignee' && newValue === '__unassigned__') ? '' : newValue;
+                    task.metadata[field] = nextValue;
+                    queueMetadataUpdate(taskId, { [field]: nextValue });
                 }
 
                 if (field === 'status') {

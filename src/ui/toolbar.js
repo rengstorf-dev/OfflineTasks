@@ -73,12 +73,10 @@ function renderSettingsPane(app) {
         ],
         kanban: [
             {
-                type: 'group',
-                label: 'Mode',
-                items: [
-                    { type: 'button', text: '📊 Status', mode: 'status', active: (app.kanbanMode || 'status') === 'status' },
-                    { type: 'button', text: '⚡ Priority', mode: 'priority', active: (app.kanbanMode || 'status') === 'priority' }
-                ]
+                type: 'single-button',
+                text: `📊 Mode: ${(app.kanbanMode || 'status') === 'priority' ? 'Priority' : (app.kanbanMode || 'status') === 'assignee' ? 'Resources' : 'Status'}`,
+                id: 'kanbanModeBtn',
+                active: true
             },
             { type: 'divider' },
             {
@@ -393,6 +391,13 @@ function renderSettingsPane(app) {
                     const modes = ['default', 'priority', 'manual'];
                     const currentIndex = modes.indexOf(app.store.kanbanSortMode);
                     app.store.kanbanSortMode = modes[(currentIndex + 1) % modes.length];
+                    app.render();
+                });
+            } else if (item.id === 'kanbanModeBtn') {
+                button.addEventListener('click', () => {
+                    const modes = ['status', 'priority', 'assignee'];
+                    const currentIndex = modes.indexOf(app.kanbanMode || 'status');
+                    app.kanbanMode = modes[(currentIndex + 1) % modes.length];
                     app.render();
                 });
             } else if (item.id === 'togglePriorityGanttBtn') {
