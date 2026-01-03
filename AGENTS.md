@@ -40,5 +40,5 @@ Follow this routine for task intake and execution:
 8. Wait for the user to reply with "task complete".
 9. Run `npm run build` after any source changes.
 10. Run the `push-to-public` skill using the task name as the commit message.
-11. Mark the task as `done` via the local API after the push completes.
+11. Mark the task as `done` via the local API after the push completes. If the task has subtasks, mark the parent and its subtasks as `done`.
 12. Move to the next task and repeat from step 6.
