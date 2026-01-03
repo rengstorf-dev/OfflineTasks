@@ -231,6 +231,13 @@ function renderKanbanView(app, container) {
                     queueMetadataUpdate(taskId, { [field]: newValue });
                 }
 
+                if (field === 'status') {
+                    const updatedParents = app.store.updateAncestorStatuses(taskId);
+                    updatedParents.forEach(({ id, status }) => {
+                        queueMetadataUpdate(id, { status });
+                    });
+                }
+
                 // Save scroll positions before re-render
                 app.kanbanScrollPositions = {};
                 container.querySelectorAll('.kanban-column').forEach(col => {

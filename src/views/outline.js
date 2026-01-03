@@ -539,6 +539,12 @@ function renderOutlineView(app, container) {
                     // If we just exited editing, don't create task yet
                     if (app.justExitedEditing) {
                         app.justExitedEditing = false;
+                        // Ensure the edited row is selected after exiting edit mode.
+                        app.selectedTaskIds.clear();
+                        app.selectedTaskIds.add(taskId);
+                        app.lastSelectedTaskId = taskId;
+                        container.querySelectorAll('.task-row').forEach(r => r.classList.remove('selected'));
+                        row.classList.add('selected');
                         // Focus row now (if no re-render happened, focus restoration won't run)
                         row.focus();
                         // Clear the focus flag since we're handling it now
@@ -823,47 +829,24 @@ function renderOutlineView(app, container) {
                                 }
                             };
 
-                            // Function to check and update parent status based on children
-                            const updateParentStatus = (childId) => {
-                                const parent = app.store.findParent(childId);
-                                if (parent && parent.children && parent.children.length > 0) {
-                                    // Check if all children are done
-                                    const allChildrenDone = parent.children.every(child => child.metadata.status === 'done');
-
-                                    if (allChildrenDone && parent.metadata.status !== 'done') {
-                                        parent.metadata.status = 'done';
-                                        if (app.apiClient) {
-                                            app.apiClient.updateTask(parent.id, {
-                                                metadata: { status: 'done' }
-                                            }).catch((error) => {
-                                                if (app.apiClient) {
-                                                    app.apiClient.reportError(error, 'Status update failed', { silent: true });
-                                                }
-                                            });
-                                        }
-                                        // Recursively check parent's parent
-                                        updateParentStatus(parent.id);
-                                    } else if (!allChildrenDone && parent.metadata.status === 'done') {
-                                        // If not all children are done but parent is done, unmark parent
-                                        parent.metadata.status = 'todo';
-                                        if (app.apiClient) {
-                                            app.apiClient.updateTask(parent.id, {
-                                                metadata: { status: 'todo' }
-                                            }).catch((error) => {
-                                                if (app.apiClient) {
-                                                    app.apiClient.reportError(error, 'Status update failed', { silent: true });
-                                                }
-                                            });
-                                        }
-                                        // Recursively check parent's parent
-                                        updateParentStatus(parent.id);
-                                    }
+                            const updateParentStatuses = (childId) => {
+                                const updatedParents = app.store.updateAncestorStatuses(childId);
+                                if (app.apiClient && updatedParents.length > 0) {
+                                    updatedParents.forEach(({ id: parentId, status }) => {
+                                        app.apiClient.updateTask(parentId, {
+                                            metadata: { status }
+                                        }).catch((error) => {
+                                            if (app.apiClient) {
+                                                app.apiClient.reportError(error, 'Status update failed', { silent: true });
+                                            }
+                                        });
+                                    });
                                 }
                             };
 
                             app.store.saveState();
                             updateTaskAndChildren(task, newStatus);
-                            updateParentStatus(taskId);
+                            updateParentStatuses(taskId);
                             app.store.notify();
                         }
                         return; // Don't open detail panel

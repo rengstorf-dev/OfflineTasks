@@ -261,18 +261,23 @@
 
                 const apiUpdates = {};
                 const metadataUpdates = {};
+                let statusUpdated = false;
 
                 Object.keys(updates).forEach(key => {
                     if (key.startsWith('metadata.')) {
                         const metaKey = key.split('.')[1];
                         task.metadata[metaKey] = updates[key];
                         metadataUpdates[metaKey] = updates[key];
+                        if (metaKey === 'status') {
+                            statusUpdated = true;
+                        }
                     } else {
                         task[key] = updates[key];
                         apiUpdates[key] = updates[key];
                     }
                 });
 
+                const updatedParents = statusUpdated ? this.updateAncestorStatuses(id) : [];
                 this.saveState();
                 this.notify();
                 if (this.apiClient) {
@@ -282,7 +287,41 @@
                     this.apiClient.updateTask(id, apiUpdates).catch((error) => {
                         this.apiClient.reportError(error, 'Task update failed', { silent: true });
                     });
+                    if (updatedParents.length > 0) {
+                        updatedParents.forEach(({ id: parentId, status }) => {
+                            this.apiClient.updateTask(parentId, { metadata: { status } }).catch((error) => {
+                                this.apiClient.reportError(error, 'Parent status update failed', { silent: true });
+                            });
+                        });
+                    }
                 }
+            }
+
+            getRollupStatus(children) {
+                if (!children || children.length === 0) return null;
+
+                const statuses = children.map(child => child?.metadata?.status || 'todo');
+                if (statuses.every(status => status === 'done')) return 'done';
+                if (statuses.some(status => status === 'in-progress')) return 'in-progress';
+                if (statuses.some(status => status === 'review')) return 'review';
+                if (statuses.some(status => status === 'todo')) return 'todo';
+                return 'todo';
+            }
+
+            updateAncestorStatuses(taskId) {
+                const updatedParents = [];
+                let parent = this.findParent(taskId);
+
+                while (parent) {
+                    const nextStatus = this.getRollupStatus(parent.children);
+                    if (nextStatus && parent.metadata.status !== nextStatus) {
+                        parent.metadata.status = nextStatus;
+                        updatedParents.push({ id: parent.id, status: nextStatus });
+                    }
+                    parent = this.findParent(parent.id);
+                }
+
+                return updatedParents;
             }
 
             toggleCollapse(id) {
