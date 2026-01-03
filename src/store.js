@@ -15,7 +15,8 @@
                 this.searchQuery = '';
                 this.showDescriptions = false;
                 this.editMode = false;
-                this.kanbanSortMode = 'default'; // 'default' | 'priority' | 'manual'
+                this.kanbanSortMode = 'default'; // 'default' | 'priority' | 'endDate' | 'manual'
+                this.kanbanSortDirection = 'asc'; // 'asc' | 'desc'
 
                 // Projects system
                 this.projects = []; // Array of {id, name, color}

@@ -34,6 +34,8 @@ function renderKanbanView(app, container) {
         let columns = currentMode.columns;
         let columnNames = currentMode.names;
         const fieldName = currentMode.field;
+        const sortDirection = app.store.kanbanSortDirection || 'asc';
+        const sortMultiplier = sortDirection === 'desc' ? -1 : 1;
 
         // Get filtered tasks with _matches markers
         const filteredTasks = app.store.getFilteredTasks();
@@ -127,7 +129,18 @@ function renderKanbanView(app, container) {
                 tasks = tasks.sort((a, b) => {
                     const aPriority = priorityOrder[a.metadata.priority || 'medium'];
                     const bPriority = priorityOrder[b.metadata.priority || 'medium'];
-                    return aPriority - bPriority;
+                    return (aPriority - bPriority) * sortMultiplier;
+                });
+            } else if (app.store.kanbanSortMode === 'endDate') {
+                tasks = tasks.sort((a, b) => {
+                    const aDate = a.metadata.endDate ? Date.parse(a.metadata.endDate) : null;
+                    const bDate = b.metadata.endDate ? Date.parse(b.metadata.endDate) : null;
+                    if (aDate === null && bDate === null) {
+                        return a.title.localeCompare(b.title) * sortMultiplier;
+                    }
+                    if (aDate === null) return 1;
+                    if (bDate === null) return -1;
+                    return (aDate - bDate) * sortMultiplier;
                 });
             } else if (app.store.kanbanSortMode === 'manual') {
                 // Sort by kanbanOrder (lower = higher in list)
@@ -136,13 +149,15 @@ function renderKanbanView(app, container) {
                     const bOrder = b.metadata.kanbanOrder ?? 999999;
                     return aOrder - bOrder;
                 });
+            } else {
+                tasks = tasks.sort((a, b) => a.title.localeCompare(b.title) * sortMultiplier);
             }
-            // 'default' mode: no sorting, use natural order
+            // 'default' mode: sort by title
 
             return `
                 <div class="kanban-column" data-column-value="${columnValue}" data-field="${fieldName}">
                     <div class="kanban-header">
-                        <span>${columnNames[columnValue]}</span>
+                        <span>${columnNames[columnValue]}${app.store.kanbanSortMode !== 'manual' ? ` ${sortDirection === 'asc' ? '↑' : '↓'}` : ''}</span>
                         <span class="badge">${tasks.length}</span>
                     </div>
                     <div class="kanban-cards">
@@ -187,6 +202,13 @@ function renderKanbanView(app, container) {
         }).join('');
 
         container.innerHTML = `<div class="kanban-view">${columnsHtml}</div>`;
+
+        container.querySelectorAll('.kanban-header').forEach(header => {
+            header.addEventListener('click', () => {
+                app.store.kanbanSortDirection = app.store.kanbanSortDirection === 'asc' ? 'desc' : 'asc';
+                app.render();
+            });
+        });
 
         // Drag and drop
         const cards = container.querySelectorAll('.kanban-card');

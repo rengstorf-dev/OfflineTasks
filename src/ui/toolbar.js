@@ -55,7 +55,7 @@ function renderSettingsPane(app) {
             { type: 'divider' },
             {
                 type: 'single-button',
-                text: `↕️ Sort: ${app.store.kanbanSortMode === 'priority' ? 'Priority' : app.store.kanbanSortMode === 'manual' ? 'Manual' : 'Default'}`,
+                text: `↕️ Sort: ${app.store.kanbanSortMode === 'priority' ? 'Priority' : app.store.kanbanSortMode === 'endDate' ? 'End Date' : app.store.kanbanSortMode === 'manual' ? 'Manual' : 'Title'}`,
                 id: 'kanbanSortBtn',
                 active: app.store.kanbanSortMode !== 'default'
             },
@@ -112,7 +112,7 @@ function renderSettingsPane(app) {
             { type: 'divider' },
             {
                 type: 'single-button',
-                text: `↕️ Sort: ${app.store.kanbanSortMode === 'priority' ? 'Priority' : app.store.kanbanSortMode === 'manual' ? 'Manual' : 'Default'}`,
+                text: `↕️ Sort: ${app.store.kanbanSortMode === 'priority' ? 'Priority' : app.store.kanbanSortMode === 'endDate' ? 'End Date' : app.store.kanbanSortMode === 'manual' ? 'Manual' : 'Title'}`,
                 id: 'kanbanSortBtn',
                 active: app.store.kanbanSortMode !== 'default'
             },
@@ -387,8 +387,8 @@ function renderSettingsPane(app) {
                 });
             } else if (item.id === 'kanbanSortBtn') {
                 button.addEventListener('click', () => {
-                    // Cycle through: default -> priority -> manual -> default
-                    const modes = ['default', 'priority', 'manual'];
+                    // Cycle through: default -> priority -> endDate -> manual -> default
+                    const modes = ['default', 'priority', 'endDate', 'manual'];
                     const currentIndex = modes.indexOf(app.store.kanbanSortMode);
                     app.store.kanbanSortMode = modes[(currentIndex + 1) % modes.length];
                     app.render();
