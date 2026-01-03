@@ -361,7 +361,8 @@ async function importDataToApi(app, importedData) {
                     assignee: metadata.assignee || '',
                     startDate: metadata.startDate || '',
                     endDate: metadata.endDate || '',
-                    kanbanOrder: metadata.kanbanOrder ?? null
+                    kanbanOrder: metadata.kanbanOrder ?? null,
+                    containerColor: metadata.containerColor || ''
                 },
                 sortIndex: index
             }));

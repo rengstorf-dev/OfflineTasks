@@ -1,0 +1,2 @@
+ALTER TABLE tasks
+ADD COLUMN container_color TEXT NOT NULL DEFAULT '';

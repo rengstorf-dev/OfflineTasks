@@ -894,6 +894,7 @@ class App {
         // Check if this is a parent (root-level) task
         const isParentTask = this.store.tasks.some(t => t.id === taskId);
         const projects = this.store.getProjects();
+        const taskProject = this.store.getTaskProject(taskId);
 
         // Build project dropdown HTML (only for parent tasks)
         const projectDropdownHtml = isParentTask ? `
@@ -905,6 +906,19 @@ class App {
                         <option value="${p.id}" ${task.projectId === p.id ? 'selected' : ''}>${p.name}</option>
                     `).join('')}
                 </select>
+            </div>
+        ` : '';
+
+        const parentContainerHtml = isParentTask ? `
+            <div class="detail-field">
+                <div class="detail-label">Parent Container Color</div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <label style="display: flex; gap: 6px; align-items: center;">
+                        <input type="checkbox" id="taskContainerEnabled">
+                        Enable
+                    </label>
+                    <input type="color" id="taskContainerColor" value="#cbd5e1">
+                </div>
             </div>
         ` : '';
 
@@ -922,6 +936,7 @@ class App {
             </div>
 
             ${projectDropdownHtml}
+            ${parentContainerHtml}
 
             <div class="detail-field">
                 <div class="detail-label">Status</div>
@@ -999,7 +1014,7 @@ class App {
 
         // Autosave function
         const autosave = () => {
-            this.store.updateTask(taskId, {
+            const updates = {
                 title: panel.querySelector('#taskTitle').value,
                 description: panel.querySelector('#taskDescription').value,
                 'metadata.status': panel.querySelector('#taskStatus').value,
@@ -1007,7 +1022,13 @@ class App {
                 'metadata.assignee': panel.querySelector('#taskAssignee').value,
                 'metadata.startDate': panel.querySelector('#taskStartDate').value,
                 'metadata.endDate': panel.querySelector('#taskEndDate').value
-            });
+            };
+            const containerEnabled = panel.querySelector('#taskContainerEnabled');
+            const containerColor = panel.querySelector('#taskContainerColor');
+            if (containerEnabled && containerColor) {
+                updates['metadata.containerColor'] = containerEnabled.checked ? containerColor.value : '';
+            }
+            this.store.updateTask(taskId, updates);
         };
 
         // Attach autosave to all input fields
@@ -1018,6 +1039,18 @@ class App {
         panel.querySelector('#taskAssignee').addEventListener('input', autosave);
         panel.querySelector('#taskStartDate').addEventListener('change', autosave);
         panel.querySelector('#taskEndDate').addEventListener('change', autosave);
+        const containerEnabled = panel.querySelector('#taskContainerEnabled');
+        const containerColor = panel.querySelector('#taskContainerColor');
+        if (containerEnabled && containerColor) {
+            containerEnabled.checked = !!task.metadata.containerColor;
+            containerColor.value = task.metadata.containerColor || (taskProject ? taskProject.color : '#cbd5e1');
+            containerColor.disabled = !containerEnabled.checked;
+            containerEnabled.addEventListener('change', () => {
+                containerColor.disabled = !containerEnabled.checked;
+                autosave();
+            });
+            containerColor.addEventListener('change', autosave);
+        }
 
         // Project assignment (only for parent tasks)
         const projectSelect = panel.querySelector('#taskProject');

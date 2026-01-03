@@ -76,6 +76,16 @@ function renderKanbanView(app, container) {
             return findPath(app.store.tasks, taskId);
         };
 
+        const getRootParent = (taskId) => {
+            let parent = app.store.findParent(taskId);
+            let root = null;
+            while (parent) {
+                root = parent;
+                parent = app.store.findParent(parent.id);
+            }
+            return root;
+        };
+
         const columnsHtml = columns.map(columnValue => {
             let tasks = leafTasks.filter(t => t.metadata[fieldName] === columnValue);
 
@@ -110,6 +120,8 @@ function renderKanbanView(app, container) {
                             const breadcrumb = path.slice(0, -1).join(' › ');
                             const relatedTasks = app.store.getRelatedTasks(task.id);
                             const project = app.store.getTaskProject(task.id);
+                            const rootParent = getRootParent(task.id);
+                            const containerColor = rootParent?.metadata?.containerColor || '';
 
                             // Get project-specific colors (or defaults)
                             const taskColors = app.store.getTaskColors(task.id);
@@ -118,13 +130,16 @@ function renderKanbanView(app, container) {
 
                             // Project color for breadcrumb highlight
                             const breadcrumbStyle = project
-                                ? `background: ${project.color}20; color: ${project.color}; padding: 2px 6px; border-radius: 4px; display: inline-block;`
+                                ? `background: ${project.color}20; color: ${project.color}; padding: 2px 6px; border-radius: 4px; display: inline-flex; align-items: center; gap: 6px;`
+                                : 'display: inline-flex; align-items: center; gap: 6px;';
+                            const containerSwatch = containerColor
+                                ? `<span style="width: 8px; height: 8px; border-radius: 50%; background: ${containerColor}; display: inline-block;"></span>`
                                 : '';
 
                             const opacity = (app.store.filterMode === 'show' && task._matches === false) ? '0.4' : '1';
                             return `
                                 <div class="kanban-card" draggable="true" data-task-id="${task.id}" style="opacity: ${opacity}; ${priorityBorder}">
-                                    ${breadcrumb ? `<div class="kanban-card-path" style="${breadcrumbStyle}">${breadcrumb}</div>` : ''}
+                                    ${breadcrumb ? `<div class="kanban-card-path" style="${breadcrumbStyle}">${containerSwatch}${breadcrumb}</div>` : ''}
                                     <div class="kanban-card-title">${task.title}</div>
                                     ${app.store.showDescriptionsInKanban && task.description ? `<div style="font-size: 12px; color: #666; margin-top: 4px; font-style: italic;">${task.description}</div>` : ''}
                                     <div class="kanban-card-meta">

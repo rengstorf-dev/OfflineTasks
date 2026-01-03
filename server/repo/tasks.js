@@ -14,6 +14,7 @@ const mapRowToTask = (row) => ({
     startDate: row.start_date,
     endDate: row.end_date,
     kanbanOrder: row.kanban_order,
+    containerColor: row.container_color || '',
   },
   children: [],
   sortIndex: row.sort_index,
@@ -42,13 +43,14 @@ const createTask = (db, data) => {
   const startDate = metadata.startDate || '';
   const endDate = metadata.endDate || '';
   const kanbanOrder = metadata.kanbanOrder ?? null;
+  const containerColor = metadata.containerColor || '';
   const sortIndex = data.sortIndex ?? 0;
 
   db.prepare(
     `INSERT INTO tasks
-      (id, parent_id, project_id, title, description, status, priority, assignee, start_date, end_date, kanban_order, sort_index)
+      (id, parent_id, project_id, title, description, status, priority, assignee, start_date, end_date, kanban_order, container_color, sort_index)
      VALUES
-      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     id,
     parentId,
@@ -61,6 +63,7 @@ const createTask = (db, data) => {
     startDate,
     endDate,
     kanbanOrder,
+    containerColor,
     sortIndex
   );
 
@@ -69,7 +72,7 @@ const createTask = (db, data) => {
     title,
     description,
     projectId,
-    metadata: { status, priority, assignee, startDate, endDate, kanbanOrder },
+    metadata: { status, priority, assignee, startDate, endDate, kanbanOrder, containerColor },
     children: [],
     sortIndex,
     parentId,
@@ -105,6 +108,7 @@ const updateTask = (db, id, updates) => {
       start_date = ?,
       end_date = ?,
       kanban_order = ?,
+      container_color = ?,
       sort_index = ?
      WHERE id = ?`
   ).run(
@@ -118,6 +122,7 @@ const updateTask = (db, id, updates) => {
     next.metadata.startDate,
     next.metadata.endDate,
     next.metadata.kanbanOrder,
+    next.metadata.containerColor || '',
     next.sortIndex,
     id
   );

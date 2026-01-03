@@ -190,6 +190,15 @@ function renderGanttView(app, container) {
                 });
                 // Mark each task row with project info for container styling
                 projectTaskRows.forEach((row, idx) => {
+                    if (row.type === 'task') {
+                        let parent = app.store.findParent(row.task.id);
+                        let root = parent || row.task;
+                        while (parent) {
+                            root = parent;
+                            parent = app.store.findParent(parent.id);
+                        }
+                        row.parentContainerColor = root?.metadata?.containerColor || '';
+                    }
                     row.projectColor = project.color;
                     row.isContainerEnd = (idx === projectTaskRows.length - 1);
                 });
@@ -217,6 +226,15 @@ function renderGanttView(app, container) {
                     unassignedTaskRows = unassignedTaskRows.concat(renderTaskRows([task], 1));
                 });
                 unassignedTaskRows.forEach((row, idx) => {
+                    if (row.type === 'task') {
+                        let parent = app.store.findParent(row.task.id);
+                        let root = parent || row.task;
+                        while (parent) {
+                            root = parent;
+                            parent = app.store.findParent(parent.id);
+                        }
+                        row.parentContainerColor = root?.metadata?.containerColor || '';
+                    }
                     row.projectColor = unassignedProject.color;
                     row.isContainerEnd = (idx === unassignedTaskRows.length - 1);
                 });
@@ -251,7 +269,7 @@ function renderGanttView(app, container) {
                                 } else {
                                     // Task row with project color left border
                                     return `
-                                    <div class="gantt-task-row" data-task-id="${row.task.id}" style="${row.projectColor ? 'border-left: 4px solid ' + row.projectColor + ';' : ''}">
+                                    <div class="gantt-task-row" data-task-id="${row.task.id}" style="${row.projectColor ? 'border-left: 4px solid ' + row.projectColor + ';' : ''}${row.parentContainerColor ? ' background: ' + row.parentContainerColor + '15;' : ''}">
                                         <div class="gantt-task-title" style="padding-left: ${row.depth * 20}px; display: flex; flex-direction: column; gap: 2px;">
                                             <div style="display: flex; align-items: center; gap: 4px;">
                                                 ${row.hasChildren ?

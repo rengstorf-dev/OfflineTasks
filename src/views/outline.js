@@ -487,7 +487,18 @@ function renderOutlineView(app, container) {
 
             const renderGroup = (project, groupTasks) => {
                 if (!groupTasks || groupTasks.length === 0) return '';
-                const tasksHtml = groupTasks.map(t => renderTask(t)).join('');
+                const tasksHtml = groupTasks.map(t => {
+                    const containerColor = t.metadata?.containerColor;
+                    const taskHtml = renderTask(t);
+                    if (!containerColor) {
+                        return taskHtml;
+                    }
+                    return `
+                        <div class="parent-container" style="border: 2px solid ${containerColor}; background: ${containerColor}15; border-radius: 8px; padding: 8px; margin-bottom: 8px;">
+                            ${taskHtml}
+                        </div>
+                    `;
+                }).join('');
                 if (!project) {
                     return tasksHtml;
                 }

@@ -55,6 +55,37 @@ const loadAppData = async (apiClient, store, settings) => {
             apiClient.getDependencies().catch(() => [])
         ]);
 
+        const previousContainerColors = new Map();
+        const collectContainerColors = (list) => {
+            list.forEach((task) => {
+                if (task?.metadata?.containerColor) {
+                    previousContainerColors.set(task.id, task.metadata.containerColor);
+                }
+                if (task.children && task.children.length > 0) {
+                    collectContainerColors(task.children);
+                }
+            });
+        };
+        collectContainerColors(store.tasks || []);
+
+        const containerColorFixes = [];
+        const applyContainerColors = (list) => {
+            list.forEach((task) => {
+                if (!task.metadata) {
+                    task.metadata = {};
+                }
+                if (!task.metadata.containerColor && previousContainerColors.has(task.id)) {
+                    const color = previousContainerColors.get(task.id);
+                    task.metadata.containerColor = color;
+                    containerColorFixes.push({ id: task.id, color });
+                }
+                if (task.children && task.children.length > 0) {
+                    applyContainerColors(task.children);
+                }
+            });
+        };
+        applyContainerColors(tasks || []);
+
         const fingerprint = buildSyncFingerprint(projects, tasks, related, dependencies);
         if (fingerprint && store._lastSyncFingerprint === fingerprint) {
             return;
@@ -129,6 +160,13 @@ const loadAppData = async (apiClient, store, settings) => {
             store._lastSyncFingerprint = fingerprint;
         }
         store.applyRollupStatuses();
+        if (containerColorFixes.length > 0) {
+            containerColorFixes.forEach(({ id, color }) => {
+                apiClient.updateTask(id, { metadata: { containerColor: color } }).catch((error) => {
+                    apiClient.reportError(error, 'Container color sync failed', { silent: true });
+                });
+            });
+        }
         store.saveState();
         store.notify();
     } catch (error) {
