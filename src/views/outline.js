@@ -440,38 +440,46 @@ function renderOutlineView(app, container) {
 
         // Group root-level tasks by project for single container per project
         const renderTasksGroupedByProject = (tasks) => {
-            let html = '';
-            let currentProjectId = null;
-            let currentProjectTasks = [];
-
-            const flushGroup = () => {
-                if (currentProjectTasks.length === 0) return;
-
-                const project = currentProjectId ? app.store.getProject(currentProjectId) : null;
-                const tasksHtml = currentProjectTasks.map(t => renderTask(t)).join('');
-
-                if (project) {
-                    html += `
-                        <div class="project-container" style="border: 2px solid ${project.color}; background: ${project.color}15; border-radius: 8px; padding: 8px; margin-bottom: 12px;">
-                            <div class="project-container-header" style="font-size: 11px; color: ${project.color}; font-weight: 600; margin-bottom: 6px; padding-left: 4px;">${project.name}</div>
-                            ${tasksHtml}
-                        </div>
-                    `;
-                } else {
-                    html += tasksHtml;
-                }
-                currentProjectTasks = [];
-            };
-
+            const grouped = new Map();
             tasks.forEach(task => {
                 const taskProjectId = task.projectId || null;
-                if (taskProjectId !== currentProjectId) {
-                    flushGroup();
-                    currentProjectId = taskProjectId;
+                if (!grouped.has(taskProjectId)) {
+                    grouped.set(taskProjectId, []);
                 }
-                currentProjectTasks.push(task);
+                grouped.get(taskProjectId).push(task);
             });
-            flushGroup(); // Flush last group
+
+            const renderGroup = (project, groupTasks) => {
+                if (!groupTasks || groupTasks.length === 0) return '';
+                const tasksHtml = groupTasks.map(t => renderTask(t)).join('');
+                if (!project) {
+                    return tasksHtml;
+                }
+                return `
+                    <div class="project-container" style="border: 2px solid ${project.color}; background: ${project.color}15; border-radius: 8px; padding: 8px; margin-bottom: 12px;">
+                        <div class="project-container-header" style="font-size: 11px; color: ${project.color}; font-weight: 600; margin-bottom: 6px; padding-left: 4px;">${project.name}</div>
+                        ${tasksHtml}
+                    </div>
+                `;
+            };
+
+            let html = '';
+            const projects = app.store.getProjects();
+            projects.forEach(project => {
+                if (grouped.has(project.id)) {
+                    html += renderGroup(project, grouped.get(project.id));
+                    grouped.delete(project.id);
+                }
+            });
+
+            if (grouped.has(null)) {
+                html += renderGroup(null, grouped.get(null));
+                grouped.delete(null);
+            }
+
+            grouped.forEach((groupTasks) => {
+                html += renderGroup(null, groupTasks);
+            });
 
             return html;
         };
