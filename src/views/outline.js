@@ -809,8 +809,11 @@ function renderOutlineView(app, container) {
                     if (e.target.dataset.toggleStatus) {
                         const task = app.store.findTask(taskId);
                         if (task) {
-                            // Toggle: if Done → Todo, else → Done
-                            const newStatus = task.metadata.status === 'done' ? 'todo' : 'done';
+                            const statusCycle = ['todo', 'in-progress', 'review', 'done'];
+                            const currentStatus = task.metadata.status || 'todo';
+                            const currentIndex = statusCycle.indexOf(currentStatus);
+                            const newStatus = (e.ctrlKey || e.metaKey) ? 'done' :
+                                (statusCycle[currentIndex === -1 ? 0 : (currentIndex + 1) % statusCycle.length]);
 
                             // Recursive function to update task and all children
                             const updateTaskAndChildren = (t, status) => {
