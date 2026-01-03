@@ -252,6 +252,42 @@ function renderOutlineView(app, container) {
             return rootIds;
         };
 
+        const buildBulletedList = (task, depth = 0) => {
+            const indent = '  '.repeat(depth);
+            let text = `${indent}- ${task.title}\n`;
+            if (task.children && task.children.length > 0) {
+                task.children.forEach(child => {
+                    text += buildBulletedList(child, depth + 1);
+                });
+            }
+            return text;
+        };
+
+        const copyTextToClipboard = (text) => {
+            if (!text) return;
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).catch((error) => {
+                    console.warn('Clipboard copy failed', error);
+                });
+                return;
+            }
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.top = '-1000px';
+            textarea.style.left = '-1000px';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            try {
+                document.execCommand('copy');
+            } catch (error) {
+                console.warn('Clipboard copy failed', error);
+            } finally {
+                textarea.remove();
+            }
+        };
+
         const indentSelectedTasks = (selectedIds) => {
             if (selectedIds.length === 0) return false;
             const selectedSet = new Set(selectedIds);
@@ -456,7 +492,7 @@ function renderOutlineView(app, container) {
                     return tasksHtml;
                 }
                 return `
-                    <div class="project-container" style="border: 2px solid ${project.color}; background: ${project.color}15; border-radius: 8px; padding: 8px; margin-bottom: 12px;">
+                    <div class="project-container" data-project-id="${project.id}" style="border: 2px solid ${project.color}; background: ${project.color}15; border-radius: 8px; padding: 8px; margin-bottom: 12px;">
                         <div class="project-container-header" style="font-size: 11px; color: ${project.color}; font-weight: 600; margin-bottom: 6px; padding-left: 4px;">${project.name}</div>
                         ${tasksHtml}
                     </div>
@@ -1090,6 +1126,40 @@ function renderOutlineView(app, container) {
             row.setAttribute('tabindex', '0');
         });
 
+        // Click project container to select all tasks in that project
+        container.querySelectorAll('.project-container').forEach(projectContainer => {
+            projectContainer.addEventListener('click', (e) => {
+                if (e.target.closest('.task-row') ||
+                    e.target.closest('.collapse-btn') ||
+                    e.target.closest('.status-icon') ||
+                    e.target.closest('.related-badge') ||
+                    e.target.closest('.task-title') ||
+                    e.target.closest('.task-description')) {
+                    return;
+                }
+
+                const taskRows = Array.from(projectContainer.querySelectorAll('.task-row'));
+                if (taskRows.length === 0) return;
+
+                const allSelected = taskRows.every(row => app.selectedTaskIds.has(row.dataset.taskId));
+                if (allSelected) {
+                    taskRows.forEach(row => row.classList.remove('selected'));
+                    app.selectedTaskIds.clear();
+                    app.lastSelectedTaskId = null;
+                    return;
+                }
+
+                app.selectedTaskIds.clear();
+                container.querySelectorAll('.task-row').forEach(r => r.classList.remove('selected'));
+                taskRows.forEach(row => {
+                    app.selectedTaskIds.add(row.dataset.taskId);
+                    row.classList.add('selected');
+                });
+                app.lastSelectedTaskId = taskRows[taskRows.length - 1].dataset.taskId;
+                taskRows[0].focus();
+            });
+        });
+
         // Click on status icon to toggle status or open detail panel
         container.querySelectorAll('[data-task-click]').forEach(el => {
             if (!el.classList.contains('task-title')) {
@@ -1249,6 +1319,15 @@ function renderOutlineView(app, container) {
                         return JSON.parse(JSON.stringify(task));
                     });
                     app.clipboard.mode = 'copy';
+                    const rootIds = getSelectedRootIdsInOrder();
+                    if (rootIds.length > 0) {
+                        const bulletText = rootIds
+                            .map(id => app.store.findTask(id))
+                            .filter(Boolean)
+                            .map(task => buildBulletedList(task).trimEnd())
+                            .join('\n');
+                        copyTextToClipboard(bulletText);
+                    }
                     console.log(`Copied ${app.clipboard.tasks.length} task(s)`);
                 }
             }
