@@ -392,6 +392,7 @@ function renderGanttView(app, container) {
                     const nextWidth = Math.max(minWidth, Math.min(maxWidth, event.clientX - containerRect.left));
                     app.store.ganttTaskPaneWidth = Math.round(nextWidth);
                     grid.style.gridTemplateColumns = `${app.store.ganttTaskPaneWidth}px 6px max-content`;
+                    grid.style.setProperty('--gantt-task-pane-width', `${app.store.ganttTaskPaneWidth}px`);
                     syncRowHeights();
                 };
 
