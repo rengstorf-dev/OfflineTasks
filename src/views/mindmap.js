@@ -191,7 +191,15 @@ function renderMindMapView(app, container) {
 
         const baseNodeHeight = 44;
         const metaLineHeight = 18;
-        const descriptionLineHeight = 24;
+        const descriptionLineHeight = 12;
+        const descriptionMarginTop = 4;
+        const nodeWidth = 160;
+        const nodePaddingX = 32;
+        const nodePaddingY = 24;
+        const contentWidth = nodeWidth - nodePaddingX;
+        const nodeHalfWidth = nodeWidth / 2;
+        const baseFontFamily = getComputedStyle(document.body).fontFamily || 'sans-serif';
+        const textMeasureContext = document.createElement('canvas').getContext('2d');
 
         const hasMetaLine = (task) => {
             return (app.store.showMindMapAssignee && task.metadata.assignee) ||
@@ -199,22 +207,78 @@ function renderMindMapView(app, container) {
                 app.store.getRelatedTasks(task.id).length > 0;
         };
 
-        const getNodeHeight = (task) => {
-            let height = baseNodeHeight;
-            if (hasMetaLine(task)) height += metaLineHeight;
-            if (app.store.showMindMapDescription && task.description) height += descriptionLineHeight;
-            return height;
+        const countWrappedLines = (text, fontSize, fontWeight = 400) => {
+            if (!text) return 1;
+            const normalized = text.trim().replace(/\s+/g, ' ');
+            if (!normalized) return 1;
+            textMeasureContext.font = `${fontWeight} ${fontSize}px ${baseFontFamily}`;
+            const words = normalized.split(' ');
+            let lines = 1;
+            let line = '';
+
+            const pushLongWord = (word) => {
+                let current = '';
+                for (const char of word) {
+                    const test = current + char;
+                    if (textMeasureContext.measureText(test).width <= contentWidth) {
+                        current = test;
+                    } else {
+                        lines += 1;
+                        current = char;
+                    }
+                }
+                line = current;
+            };
+
+            words.forEach(word => {
+                const testLine = line ? `${line} ${word}` : word;
+                if (textMeasureContext.measureText(testLine).width <= contentWidth) {
+                    line = testLine;
+                    return;
+                }
+                if (!line) {
+                    pushLongWord(word);
+                    return;
+                }
+                lines += 1;
+                line = word;
+                if (textMeasureContext.measureText(line).width > contentWidth) {
+                    pushLongWord(word);
+                }
+            });
+
+            return lines;
+        };
+
+        const getNodeHeight = (task, level = 0) => {
+            const titleFontSize = level === 0 ? 16 : 14;
+            const titleFontWeight = level === 0 ? 600 : 400;
+            const titleLineHeight = level === 0 ? 20 : 18;
+            const titleLines = countWrappedLines(task.title, titleFontSize, titleFontWeight);
+
+            let height = nodePaddingY + (titleLines * titleLineHeight);
+
+            if (hasMetaLine(task)) {
+                height += metaLineHeight;
+            }
+
+            if (app.store.showMindMapDescription && task.description) {
+                const descLines = countWrappedLines(task.description, 10, 400);
+                height += descriptionMarginTop + (descLines * descriptionLineHeight);
+            }
+
+            return Math.max(height, baseNodeHeight);
         };
 
         const getMaxNodeHeight = (tasks) => {
             let maxHeight = 40;
-            const visit = (task) => {
-                maxHeight = Math.max(maxHeight, getNodeHeight(task));
+            const visit = (task, level = 0) => {
+                maxHeight = Math.max(maxHeight, getNodeHeight(task, level));
                 if (task.children && task.children.length > 0) {
-                    task.children.forEach(visit);
+                    task.children.forEach(child => visit(child, level + 1));
                 }
             };
-            tasks.forEach(visit);
+            tasks.forEach(task => visit(task, 0));
             return maxHeight;
         };
 
@@ -247,7 +311,7 @@ function renderMindMapView(app, container) {
 
             // Place nodes recursively in tree layout
             const placeTreeNodes = (task, x, y, level, parentX, parentY, parentHeight) => {
-                const nodeHeight = getNodeHeight(task);
+                const nodeHeight = getNodeHeight(task, level);
                 // Check for custom position
                 const customPos = getCurrentPositions()[task.id];
                 const finalX = customPos ? customPos.x : x;
@@ -258,15 +322,16 @@ function renderMindMapView(app, container) {
 
                 // Draw line from parent to this node (if not root)
                 if (parentX !== undefined && parentY !== undefined) {
-                    const anchorOffset = baseNodeHeight / 2;
+                    const parentOffset = parentHeight / 2;
+                    const childOffset = nodeHeight / 2;
                     lines.push({
                         x1: parentX,
-                        y1: parentY + anchorOffset + lineGap,
+                        y1: parentY + parentOffset + lineGap,
                         x2: finalX,
-                        y2: finalY - anchorOffset - lineGap,
+                        y2: finalY - childOffset - lineGap,
                         task: task,
                         mode: 'tree',
-                        anchorOffset: anchorOffset,
+                        anchorOffset: parentOffset,
                         lineGap: lineGap
                     });
                 }
@@ -298,7 +363,7 @@ function renderMindMapView(app, container) {
             filteredTasks.forEach((rootTask, idx) => {
                 const rootWidth = rootWidths[idx] - rootGap;
                 const rootX = currentRootX + rootWidth / 2;
-                placeTreeNodes(rootTask, rootX, startY, 0, undefined, undefined, getNodeHeight(rootTask));
+                placeTreeNodes(rootTask, rootX, startY, 0, undefined, undefined, getNodeHeight(rootTask, 0));
                 currentRootX += rootWidths[idx];
             });
 
@@ -355,7 +420,7 @@ function renderMindMapView(app, container) {
                         level,
                         calculatedX: calcX,
                         calculatedY: calcY,
-                        height: getNodeHeight(child)
+                        height: getNodeHeight(child, level)
                     });
 
                     // Connect from parent center to child center (store child task for project color)
@@ -367,7 +432,7 @@ function renderMindMapView(app, container) {
                         y2: finalY,
                         task: child,
                         mode: 'radial',
-                        childHeight: getNodeHeight(child)
+                        childHeight: getNodeHeight(child, level)
                     });
 
                     // Recursively place this child's children
@@ -393,7 +458,7 @@ function renderMindMapView(app, container) {
                     level: 0,
                     calculatedX: calcRootX,
                     calculatedY: calcRootY,
-                    height: getNodeHeight(rootTask)
+                    height: getNodeHeight(rootTask, 0)
                 });
 
                 // Place children radially around this root
@@ -407,13 +472,12 @@ function renderMindMapView(app, container) {
         // Helper to get connection point coordinates for a node
         // Nodes are 160px wide, positioned by center coordinates
         const getConnectionPoint = (nodeX, nodeY, nodeHeight, side) => {
-            const nodeWidth = 160;
             const halfHeight = nodeHeight / 2;
             switch (side) {
                 case 'top': return { x: nodeX, y: nodeY - halfHeight };
                 case 'bottom': return { x: nodeX, y: nodeY + halfHeight };
-                case 'left': return { x: nodeX - 80, y: nodeY };
-                case 'right': return { x: nodeX + 80, y: nodeY };
+                case 'left': return { x: nodeX - nodeHalfWidth, y: nodeY };
+                case 'right': return { x: nodeX + nodeHalfWidth, y: nodeY };
                 default: return { x: nodeX, y: nodeY };
             }
         };
@@ -512,7 +576,7 @@ function renderMindMapView(app, container) {
             }
             return `
             <div class="mindmap-node ${node.level === 0 ? 'root' : `level-${Math.min(node.level, 3)}`}"
-                 style="position: absolute; left: ${node.x - 80}px; top: ${node.y - node.height / 2}px; width: 160px; min-height: ${node.height}px; pointer-events: auto; opacity: ${opacity}; ${projectStyle}"
+                 style="position: absolute; left: ${node.x - nodeHalfWidth}px; top: ${node.y - node.height / 2}px; width: ${nodeWidth}px; min-height: ${node.height}px; pointer-events: auto; opacity: ${opacity}; ${projectStyle}"
                  data-task-id="${node.task.id}">
                 ${hasChildren && app.mindmapShowCollapse ? `
                     <div class="mindmap-collapse-container" style="position: absolute; top: -8px; right: -8px; display: flex; flex-direction: column; gap: 2px;">
