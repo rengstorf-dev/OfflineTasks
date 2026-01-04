@@ -1,35 +1,13 @@
 function renderMindMapView(app, container) {
         // Use filtered tasks (respects project filter)
-        let filteredTasks = app.store.getFilteredTasks();
-        if (!app.mindmapLayoutHasCustomPositions) {
-            const projects = app.store.getProjects();
-            const grouped = new Map();
-            filteredTasks.forEach(task => {
-                const key = task.projectId || 'unassigned';
-                if (!grouped.has(key)) {
-                    grouped.set(key, []);
-                }
-                grouped.get(key).push(task);
-            });
-            const ordered = [];
-            projects.forEach(project => {
-                if (grouped.has(project.id)) {
-                    ordered.push(...grouped.get(project.id));
-                    grouped.delete(project.id);
-                }
-            });
-            if (grouped.has('unassigned')) {
-                ordered.push(...grouped.get('unassigned'));
-                grouped.delete('unassigned');
+        if (app.store.projectViewMode === 'multi') {
+            const rootTasks = app.store.getFilteredTasks({ skipParentFilter: true }).filter(task => !task.parentId);
+            if (!app.store.parentFilterInitialized || app.store.selectedParents.size !== rootTasks.length) {
+                app.store.selectedParents = new Set(rootTasks.map(task => task.id));
+                app.store.parentFilterInitialized = true;
             }
-            grouped.forEach(tasks => ordered.push(...tasks));
-            filteredTasks = ordered;
         }
-
-        if (filteredTasks.length === 0) {
-            container.innerHTML = '<div style="padding: 40px; text-align: center; color: #999;">No tasks to display</div>';
-            return;
-        }
+        let filteredTasks = app.store.getFilteredTasks();
 
         // Initialize mode if not set
         if (!app.mindmapMode) {
@@ -76,6 +54,45 @@ function renderMindMapView(app, container) {
             }
             return app.mindmapCustomPositions[app.mindmapMode];
         };
+
+        let projectGroups = null;
+        if (app.store.projectViewMode === 'multi') {
+            const projects = app.store.getProjects();
+            const grouped = new Map();
+            filteredTasks.forEach(task => {
+                const key = task.projectId || 'unassigned';
+                if (!grouped.has(key)) {
+                    grouped.set(key, []);
+                }
+                grouped.get(key).push(task);
+            });
+            const ordered = [];
+            projectGroups = [];
+            projects.forEach(project => {
+                if (grouped.has(project.id)) {
+                    const tasks = grouped.get(project.id);
+                    ordered.push(...tasks);
+                    projectGroups.push({ id: project.id, tasks });
+                    grouped.delete(project.id);
+                }
+            });
+            if (grouped.has('unassigned')) {
+                const tasks = grouped.get('unassigned');
+                ordered.push(...tasks);
+                projectGroups.push({ id: 'unassigned', tasks });
+                grouped.delete('unassigned');
+            }
+            grouped.forEach((tasks, id) => {
+                ordered.push(...tasks);
+                projectGroups.push({ id, tasks });
+            });
+            filteredTasks = ordered;
+        }
+
+        if (filteredTasks.length === 0) {
+            container.innerHTML = '<div style="padding: 40px; text-align: center; color: #999;">No tasks to display</div>';
+            return;
+        }
 
         // Initialize line connection points storage
         // Format: { "childTaskId": { from: "bottom", to: "top" } }
@@ -416,17 +433,61 @@ function renderMindMapView(app, container) {
             };
 
             // Calculate spacing based on max depth of each tree
-            const baseRadius = (200 + extraSpacing) * lineLengthMultiplier;
-            const radiusPerLevel = (150 + extraSpacing) * lineLengthMultiplier;
+            let baseRadius = (200 + extraSpacing) * lineLengthMultiplier;
+            let radiusPerLevel = (150 + extraSpacing) * lineLengthMultiplier;
+            const minNodeGapRadial = 40;
+            const maxChildrenByLevel = {};
+            const collectMaxChildren = (task, level = 1) => {
+                if (!task.children || task.children.length === 0 || app.mindmapCollapsed.has(task.id)) {
+                    return;
+                }
+                maxChildrenByLevel[level] = Math.max(maxChildrenByLevel[level] || 0, task.children.length);
+                task.children.forEach(child => collectMaxChildren(child, level + 1));
+            };
+            filteredTasks.forEach(rootTask => collectMaxChildren(rootTask, 1));
+
+            const requiredRadiusByLevel = {};
+            Object.keys(maxChildrenByLevel).forEach(levelKey => {
+                const level = Number(levelKey);
+                const count = Math.max(maxChildrenByLevel[level], 1);
+                const angleStep = (Math.PI * 2) / count;
+                requiredRadiusByLevel[level] = (nodeWidth + minNodeGapRadial) / angleStep;
+            });
+
+            if (requiredRadiusByLevel[1]) {
+                baseRadius = Math.max(baseRadius, requiredRadiusByLevel[1]);
+            }
+            Object.keys(requiredRadiusByLevel).forEach(levelKey => {
+                const level = Number(levelKey);
+                if (level > 1) {
+                    const needed = requiredRadiusByLevel[level];
+                    const perLevel = (needed - baseRadius) / (level - 1);
+                    if (perLevel > radiusPerLevel) {
+                        radiusPerLevel = perLevel;
+                    }
+                }
+            });
             const rootSpacings = filteredTasks.map(task => {
                 const maxDepth = getMaxDepth(task);
                 // Each tree needs space for its full radial spread on both sides
                 const treeRadius = baseRadius + (maxDepth * radiusPerLevel);
-                return treeRadius * 2 + 200; // Full diameter plus buffer
+                return treeRadius * 2 + (nodeWidth * 2) + 120; // Full diameter plus buffer
             });
+            const rootSpacingById = new Map();
+            filteredTasks.forEach((task, idx) => {
+                rootSpacingById.set(task.id, rootSpacings[idx]);
+            });
+            const projectGap = 200;
 
             // Calculate starting position
-            const totalWidth = rootSpacings.reduce((a, b) => a + b, 0);
+            const totalWidth = projectGroups
+                ? projectGroups.reduce((sum, group, groupIdx) => {
+                    const groupWidth = group.tasks.reduce((acc, task) => {
+                        return acc + (rootSpacingById.get(task.id) || 0);
+                    }, 0);
+                    return sum + groupWidth + (groupIdx > 0 ? projectGap : 0);
+                }, 0)
+                : rootSpacings.reduce((a, b) => a + b, 0);
             let currentX = centerX - totalWidth / 2;
 
             // Recursively place children in a radial pattern
@@ -474,8 +535,8 @@ function renderMindMapView(app, container) {
             };
 
             // Place each root task horizontally with dynamic spacing
-            filteredTasks.forEach((rootTask, idx) => {
-                const calcRootX = currentX + rootSpacings[idx] / 2;
+            const placeRootTask = (rootTask, spacing) => {
+                const calcRootX = currentX + spacing / 2;
                 const calcRootY = centerY;
 
                 // Check for custom position
@@ -498,8 +559,24 @@ function renderMindMapView(app, container) {
                 placeChildren(rootTask, rootX, rootY, 1, 0, Math.PI * 2);
 
                 // Move to next root position
-                currentX += rootSpacings[idx];
-            });
+                currentX += spacing;
+            };
+
+            if (projectGroups) {
+                projectGroups.forEach((group, groupIdx) => {
+                    if (groupIdx > 0) {
+                        currentX += projectGap;
+                    }
+                    group.tasks.forEach((rootTask) => {
+                        const spacing = rootSpacingById.get(rootTask.id) || 0;
+                        placeRootTask(rootTask, spacing);
+                    });
+                });
+            } else {
+                filteredTasks.forEach((rootTask, idx) => {
+                    placeRootTask(rootTask, rootSpacings[idx]);
+                });
+            }
         }
 
         // Helper to get connection point coordinates for a node
