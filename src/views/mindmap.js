@@ -297,6 +297,14 @@ function renderMindMapView(app, container) {
             const rootGap = 200; // Extra gap between root trees
             const childPadding = 40; // Padding added per level of depth
 
+            const levelTopOffsets = {};
+            const getLevelTop = (level) => {
+                if (levelTopOffsets[level] === undefined) {
+                    levelTopOffsets[level] = startY + (level * levelHeight);
+                }
+                return levelTopOffsets[level];
+            };
+
             // Calculate width needed for each subtree (with padding for depth)
             const calculateWidth = (task, depth = 0) => {
                 if (!task.children || task.children.length === 0 || app.mindmapCollapsed.has(task.id)) {
@@ -315,7 +323,8 @@ function renderMindMapView(app, container) {
                 // Check for custom position
                 const customPos = getCurrentPositions()[task.id];
                 const finalX = customPos ? customPos.x : x;
-                const finalY = customPos ? customPos.y : y;
+                const levelTop = getLevelTop(level);
+                const finalY = customPos ? customPos.y : (levelTop + nodeHeight / 2);
 
                 // Add node at position
                 nodes.push({ task, x: finalX, y: finalY, level, calculatedX: x, calculatedY: y, height: nodeHeight });
@@ -328,7 +337,7 @@ function renderMindMapView(app, container) {
                         x1: parentX,
                         y1: parentY + parentOffset + lineGap,
                         x2: finalX,
-                        y2: finalY - childOffset - lineGap,
+                        y2: levelTop - lineGap,
                         task: task,
                         mode: 'tree',
                         anchorOffset: parentOffset,
