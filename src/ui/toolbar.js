@@ -546,7 +546,7 @@ function renderSettingsPane(app) {
             container.style.display = 'inline-block';
 
             // Get root-level tasks for the current project filter
-            const rootTasks = app.store.getFilteredTasks().filter(task => !task.parentId);
+            const rootTasks = app.store.getFilteredTasks({ skipParentFilter: true }).filter(task => !task.parentId);
             const rootTaskIds = new Set(rootTasks.map(task => task.id));
 
             // Initialize with all parents selected (only once)

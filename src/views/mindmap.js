@@ -1,6 +1,30 @@
 function renderMindMapView(app, container) {
         // Use filtered tasks (respects project filter)
-        const filteredTasks = app.store.getFilteredTasks();
+        let filteredTasks = app.store.getFilteredTasks();
+        if (!app.mindmapLayoutHasCustomPositions) {
+            const projects = app.store.getProjects();
+            const grouped = new Map();
+            filteredTasks.forEach(task => {
+                const key = task.projectId || 'unassigned';
+                if (!grouped.has(key)) {
+                    grouped.set(key, []);
+                }
+                grouped.get(key).push(task);
+            });
+            const ordered = [];
+            projects.forEach(project => {
+                if (grouped.has(project.id)) {
+                    ordered.push(...grouped.get(project.id));
+                    grouped.delete(project.id);
+                }
+            });
+            if (grouped.has('unassigned')) {
+                ordered.push(...grouped.get('unassigned'));
+                grouped.delete('unassigned');
+            }
+            grouped.forEach(tasks => ordered.push(...tasks));
+            filteredTasks = ordered;
+        }
 
         if (filteredTasks.length === 0) {
             container.innerHTML = '<div style="padding: 40px; text-align: center; color: #999;">No tasks to display</div>';

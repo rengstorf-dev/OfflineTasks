@@ -398,7 +398,7 @@
                 return flat.filter(task => matchesSearch(task) && matchesStatus(task));
             }
 
-            getFilteredTasks() {
+            getFilteredTasks(options = {}) {
                 // Helper to check if any descendant matches
                 const hasMatchingDescendant = (task) => {
                     if (task.children && task.children.length > 0) {
@@ -511,7 +511,7 @@
                 // In global mode, show all tasks (no project filtering)
 
                 // Apply parent filter SECOND (only show selected parent tasks and their children)
-                if (this.parentFilterInitialized) {
+                if (this.parentFilterInitialized && !options.skipParentFilter) {
                     if (this.selectedParents.size === 0) {
                         // No parents selected - show nothing
                         tasksToFilter = [];
