@@ -1,6 +1,34 @@
 function renderSettingsPane(app) {
     const pane = document.getElementById('settingsPane');
-    pane.innerHTML = '<span class="toolbar-label">Filters</span>';
+    pane.innerHTML = '';
+
+    if (!app.settingsPaneSection || app.settingsPaneView !== app.currentView) {
+        app.settingsPaneSection = 'filters';
+        app.settingsPaneView = app.currentView;
+    }
+
+    const tabs = document.createElement('div');
+    tabs.className = 'settings-pane-tabs';
+
+    const filtersTab = document.createElement('button');
+    filtersTab.className = 'settings-pane-tab' + (app.settingsPaneSection === 'filters' ? ' active' : '');
+    filtersTab.textContent = 'Filters';
+    filtersTab.addEventListener('click', () => {
+        app.settingsPaneSection = 'filters';
+        app.render();
+    });
+
+    const displayTab = document.createElement('button');
+    displayTab.className = 'settings-pane-tab' + (app.settingsPaneSection === 'display' ? ' active' : '');
+    displayTab.textContent = 'Display';
+    displayTab.addEventListener('click', () => {
+        app.settingsPaneSection = 'display';
+        app.render();
+    });
+
+    tabs.appendChild(filtersTab);
+    tabs.appendChild(displayTab);
+    pane.appendChild(tabs);
 
     const settingsConfig = {
         outline: [
@@ -8,12 +36,14 @@ function renderSettingsPane(app) {
                 type: 'single-button',
                 text: app.store.filterMode === 'show' ? '👁 Show' : '🔍 Filter',
                 id: 'toggleFilterMode',
-                active: app.store.filterMode === 'filter'
+                active: app.store.filterMode === 'filter',
+                section: 'filters'
             },
             { type: 'divider' },
             {
                 type: 'group',
                 label: '',
+                section: 'filters',
                 items: [
                     { type: 'button', text: 'To Do', filter: 'todo', active: app.store.selectedFilters.has('todo') },
                     { type: 'button', text: 'In Progress', filter: 'in-progress', active: app.store.selectedFilters.has('in-progress') },
@@ -24,51 +54,60 @@ function renderSettingsPane(app) {
             { type: 'divider' },
             {
                 type: 'parent-filter',
-                id: 'parentFilter'
+                id: 'parentFilter',
+                section: 'filters'
             },
             { type: 'divider' },
             {
                 type: 'input',
                 placeholder: 'Search tasks...',
                 value: app.store.searchQuery,
-                id: 'searchBox'
+                id: 'searchBox',
+                section: 'filters'
+            },
+            { type: 'divider' },
+            {
+                type: 'related-filter',
+                id: 'relatedFilter',
+                section: 'filters'
             },
             { type: 'divider' },
             {
                 type: 'single-button',
                 text: app.store.showAssigneeInOutline ? '👤 Assignee' : '👤 Assignee',
                 id: 'toggleAssigneeOutline',
-                active: app.store.showAssigneeInOutline
+                active: app.store.showAssigneeInOutline,
+                section: 'display'
             },
             {
                 type: 'single-button',
                 text: app.store.showPriorityInOutline ? '⚠️ Priority' : '⚠️ Priority',
                 id: 'togglePriorityOutline',
-                active: app.store.showPriorityInOutline
+                active: app.store.showPriorityInOutline,
+                section: 'display'
             },
             {
                 type: 'single-button',
                 text: app.store.showDescriptions ? '📝 Description' : '📝 Description',
                 id: 'toggleDescriptions',
-                active: app.store.showDescriptions
+                active: app.store.showDescriptions,
+                section: 'display'
             },
             { type: 'divider' },
             {
                 type: 'single-button',
                 text: `↕️ Sort: ${app.store.kanbanSortMode === 'priority' ? 'Priority' : app.store.kanbanSortMode === 'endDate' ? 'End Date' : app.store.kanbanSortMode === 'manual' ? 'Manual' : 'Title'}`,
                 id: 'kanbanSortBtn',
-                active: app.store.kanbanSortMode !== 'default'
+                active: app.store.kanbanSortMode !== 'default',
+                section: 'display'
             },
             { type: 'divider' },
             {
                 type: 'single-button',
                 text: '🔗 Relate',
                 id: 'relateLinkModeBtn',
-                active: app.relateLinkMode
-            },
-            {
-                type: 'related-filter',
-                id: 'relatedFilter'
+                active: app.relateLinkMode,
+                section: 'display'
             }
         ],
         kanban: [
@@ -76,19 +115,22 @@ function renderSettingsPane(app) {
                 type: 'single-button',
                 text: `📊 Mode: ${(app.kanbanMode || 'status') === 'priority' ? 'Priority' : (app.kanbanMode || 'status') === 'assignee' ? 'Resources' : 'Status'}`,
                 id: 'kanbanModeBtn',
-                active: true
+                active: true,
+                section: 'display'
             },
             { type: 'divider' },
             {
                 type: 'single-button',
                 text: app.store.filterMode === 'show' ? '👁 Show' : '🔍 Filter',
                 id: 'toggleFilterMode',
-                active: app.store.filterMode === 'filter'
+                active: app.store.filterMode === 'filter',
+                section: 'filters'
             },
             { type: 'divider' },
             {
                 type: 'group',
                 label: '',
+                section: 'filters',
                 items: [
                     { type: 'button', text: 'To Do', filter: 'todo', active: app.store.selectedFilters.has('todo') },
                     { type: 'button', text: 'In Progress', filter: 'in-progress', active: app.store.selectedFilters.has('in-progress') },
@@ -99,51 +141,60 @@ function renderSettingsPane(app) {
             { type: 'divider' },
             {
                 type: 'parent-filter',
-                id: 'parentFilter'
+                id: 'parentFilter',
+                section: 'filters'
             },
             { type: 'divider' },
             {
                 type: 'input',
                 placeholder: 'Search tasks...',
                 value: app.store.searchQuery,
-                id: 'searchBox'
+                id: 'searchBox',
+                section: 'filters'
+            },
+            { type: 'divider' },
+            {
+                type: 'related-filter',
+                id: 'relatedFilter',
+                section: 'filters'
             },
             { type: 'divider' },
             {
                 type: 'single-button',
                 text: app.store.showAssigneeInKanban ? '👤 Assignee' : '👤 Assignee',
                 id: 'toggleAssigneeKanban',
-                active: app.store.showAssigneeInKanban
+                active: app.store.showAssigneeInKanban,
+                section: 'display'
             },
             {
                 type: 'single-button',
                 text: app.store.showPriorityInKanban ? '⚠️ Priority' : '⚠️ Priority',
                 id: 'togglePriorityKanban',
-                active: app.store.showPriorityInKanban
+                active: app.store.showPriorityInKanban,
+                section: 'display'
             },
             {
                 type: 'single-button',
                 text: app.store.showDescriptionsInKanban ? '📝 Description' : '📝 Description',
                 id: 'toggleDescriptionsKanban',
-                active: app.store.showDescriptionsInKanban
+                active: app.store.showDescriptionsInKanban,
+                section: 'display'
             },
             { type: 'divider' },
             {
                 type: 'single-button',
                 text: `↕️ Sort: ${app.store.kanbanSortMode === 'priority' ? 'Priority' : app.store.kanbanSortMode === 'endDate' ? 'End Date' : app.store.kanbanSortMode === 'manual' ? 'Manual' : 'Title'}`,
                 id: 'kanbanSortBtn',
-                active: app.store.kanbanSortMode !== 'default'
+                active: app.store.kanbanSortMode !== 'default',
+                section: 'display'
             },
             { type: 'divider' },
             {
                 type: 'single-button',
                 text: '🔗 Relate',
                 id: 'relateLinkModeBtn',
-                active: app.relateLinkMode
-            },
-            {
-                type: 'related-filter',
-                id: 'relatedFilter'
+                active: app.relateLinkMode,
+                section: 'display'
             }
         ],
         gantt: [
@@ -151,12 +202,14 @@ function renderSettingsPane(app) {
                 type: 'single-button',
                 text: app.store.filterMode === 'show' ? '👁 Show' : '🔍 Filter',
                 id: 'toggleFilterMode',
-                active: app.store.filterMode === 'filter'
+                active: app.store.filterMode === 'filter',
+                section: 'filters'
             },
             { type: 'divider' },
             {
                 type: 'group',
                 label: '',
+                section: 'filters',
                 items: [
                     { type: 'button', text: 'To Do', filter: 'todo', active: app.store.selectedFilters.has('todo') },
                     { type: 'button', text: 'In Progress', filter: 'in-progress', active: app.store.selectedFilters.has('in-progress') },
@@ -167,56 +220,66 @@ function renderSettingsPane(app) {
             { type: 'divider' },
             {
                 type: 'parent-filter',
-                id: 'parentFilter'
+                id: 'parentFilter',
+                section: 'filters'
             },
             { type: 'divider' },
             {
                 type: 'input',
                 placeholder: 'Search tasks...',
                 value: app.store.searchQuery,
-                id: 'searchBox'
+                id: 'searchBox',
+                section: 'filters'
+            },
+            { type: 'divider' },
+            {
+                type: 'related-filter',
+                id: 'relatedFilter',
+                section: 'filters'
             },
             { type: 'divider' },
             {
                 type: 'single-button',
                 text: app.store.showAssigneeInGantt ? '👤 Assignee' : '👤 Assignee',
                 id: 'toggleAssigneeGantt',
-                active: app.store.showAssigneeInGantt
+                active: app.store.showAssigneeInGantt,
+                section: 'display'
             },
             {
                 type: 'single-button',
                 text: app.store.showPriorityInGantt ? '⚠️ Priority' : '⚠️ Priority',
                 id: 'togglePriorityGantt',
-                active: app.store.showPriorityInGantt
+                active: app.store.showPriorityInGantt,
+                section: 'display'
             },
             {
                 type: 'single-button',
                 text: app.store.showDescriptionsInGantt ? '📝 Description' : '📝 Description',
                 id: 'toggleDescriptionsGantt',
-                active: app.store.showDescriptionsInGantt
+                active: app.store.showDescriptionsInGantt,
+                section: 'display'
             },
             {
                 type: 'single-button',
                 text: app.store.showBarTextInGantt ? '🧾 Bar Text' : '🧾 Bar Text',
                 id: 'toggleGanttBarText',
-                active: app.store.showBarTextInGantt
+                active: app.store.showBarTextInGantt,
+                section: 'display'
             },
             { type: 'divider' },
             {
                 type: 'single-button',
                 text: '🔗 Relate',
                 id: 'relateLinkModeBtn',
-                active: app.relateLinkMode
-            },
-            {
-                type: 'related-filter',
-                id: 'relatedFilter'
+                active: app.relateLinkMode,
+                section: 'display'
             }
         ],
         mindmap: [
             {
                 type: 'group',
                 label: 'Layout',
+                section: 'display',
                 items: [
                     { type: 'button', text: '🌳 Tree', mode: 'tree', active: app.mindmapMode === 'tree' },
                     { type: 'button', text: '⭕ Radial', mode: 'radial', active: app.mindmapMode === 'radial' }
@@ -227,12 +290,14 @@ function renderSettingsPane(app) {
                 type: 'single-button',
                 text: app.store.filterMode === 'show' ? '👁 Show' : '🔍 Filter',
                 id: 'toggleFilterMode',
-                active: app.store.filterMode === 'filter'
+                active: app.store.filterMode === 'filter',
+                section: 'filters'
             },
             { type: 'divider' },
             {
                 type: 'group',
                 label: '',
+                section: 'filters',
                 items: [
                     { type: 'button', text: 'To Do', filter: 'todo', active: app.store.selectedFilters.has('todo') },
                     { type: 'button', text: 'In Progress', filter: 'in-progress', active: app.store.selectedFilters.has('in-progress') },
@@ -243,50 +308,59 @@ function renderSettingsPane(app) {
             { type: 'divider' },
             {
                 type: 'parent-filter',
-                id: 'parentFilter'
+                id: 'parentFilter',
+                section: 'filters'
             },
             { type: 'divider' },
             {
                 type: 'input',
                 placeholder: 'Search tasks...',
                 value: app.store.searchQuery,
-                id: 'searchBox'
+                id: 'searchBox',
+                section: 'filters'
+            },
+            { type: 'divider' },
+            {
+                type: 'related-filter',
+                id: 'relatedFilter',
+                section: 'filters'
             },
             { type: 'divider' },
             {
                 type: 'single-button',
                 text: app.store.showMindMapAssignee ? 'Hide Assignee' : 'Show Assignee',
                 id: 'toggleMindMapAssigneeBtn',
-                active: app.store.showMindMapAssignee
+                active: app.store.showMindMapAssignee,
+                section: 'display'
             },
             { type: 'divider' },
             {
                 type: 'single-button',
                 text: app.store.showMindMapPriority ? '⚠️ Priority' : '⚠️ Priority',
                 id: 'toggleMindMapPriorityBtn',
-                active: app.store.showMindMapPriority
+                active: app.store.showMindMapPriority,
+                section: 'display'
             },
             {
                 type: 'single-button',
                 text: app.store.showMindMapDescription ? '📝 Description' : '📝 Description',
                 id: 'toggleMindMapDescriptionBtn',
-                active: app.store.showMindMapDescription
+                active: app.store.showMindMapDescription,
+                section: 'display'
             },
             { type: 'divider' },
             {
                 type: 'single-button',
                 text: '🔗 Relate',
                 id: 'relateLinkModeBtn',
-                active: app.relateLinkMode
-            },
-            {
-                type: 'related-filter',
-                id: 'relatedFilter'
+                active: app.relateLinkMode,
+                section: 'display'
             }
         ]
     };
 
-    const config = settingsConfig[app.currentView] || [];
+    const activeSection = app.settingsPaneSection || 'filters';
+    const config = (settingsConfig[app.currentView] || []).filter(item => item.section === activeSection);
 
     config.forEach(item => {
         if (item.type === 'group') {
