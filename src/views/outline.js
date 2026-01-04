@@ -531,19 +531,24 @@ function renderOutlineView(app, container) {
             return html;
         };
 
+        const showEditHint = !app.settings.get('disableTooltips');
         container.innerHTML = `
             <div class="outline-view">
                 ${renderTasksGroupedByProject(tasks)}
             </div>
+            ${showEditHint ? `
             <div class="inline-edit-hint" id="editHint">
                 💡 <strong>Type</strong> to edit | <strong>Ctrl+Click</strong> = multi-select | <strong>Shift+Click</strong> = range | <strong>Ctrl+C/X/V</strong> = copy/cut/paste | <strong>Enter</strong> = new | <strong>Tab</strong> = indent | <strong>Delete</strong> = remove
             </div>
+            ` : ''}
         `;
 
         // Show hint briefly
         const hint = container.querySelector('#editHint');
-        hint.classList.add('visible');
-        setTimeout(() => hint.classList.remove('visible'), 4000);
+        if (hint) {
+            hint.classList.add('visible');
+            setTimeout(() => hint.classList.remove('visible'), 4000);
+        }
 
         // Track current selection
         let currentSelection = app.selectedTaskId;

@@ -37,6 +37,7 @@ function closeAddTaskModal() {
 }
 
 function openSettingsModal(app) {
+    apiKeySettingsApp = app;
     // Populate settings from current state
     populateSettingsModal(app);
 
@@ -74,6 +75,9 @@ function openSettingsModal(app) {
     document.getElementById('settingsImportInput').onchange = (e) => {
         importData(app, e);
     };
+    bindApiKeyHandlers(app);
+    refreshAllProviderKeyStatus();
+    refreshProviderKeyStatus(getCurrentProvider());
 
     // Show modal
     document.getElementById('globalSettingsModal').classList.add('visible');
@@ -81,20 +85,82 @@ function openSettingsModal(app) {
 
 function closeSettingsModal() {
     document.getElementById('globalSettingsModal').classList.remove('visible');
+    apiKeySettingsApp = null;
 }
 
 function populateSettingsModal(app) {
     // Behavior tab
     document.getElementById('setting-filterToggleBehavior').checked = app.settings.get('filterToggleBehavior');
     document.getElementById('setting-autoSave').checked = app.settings.get('autoSave');
+    document.getElementById('setting-disableTooltips').checked = app.settings.get('disableTooltips');
     document.getElementById('setting-defaultView').value = app.settings.get('defaultView');
+    const telemetryToggle = document.getElementById('setting-telemetryEnabled');
+    if (telemetryToggle) {
+        telemetryToggle.checked = app.settings.get('telemetry.enabled');
+    }
+    const requireTestsToggle = document.getElementById('setting-requireTests');
+    if (requireTestsToggle) {
+        requireTestsToggle.checked = app.settings.get('developer.requireTests');
+    }
+
+    const providerSelect = document.getElementById('setting-providerSelect');
+    const providerKeyInput = document.getElementById('setting-providerKey');
+    const providerKeyStatus = document.getElementById('setting-providerKeyStatus');
+    const providerKeyBadge = document.getElementById('setting-providerKeyBadge');
+    const providerKeyHelp = document.getElementById('setting-providerKeyHelp');
+    const providerKeyWarning = document.getElementById('setting-providerKeyWarning');
+    const providerKeyOverride = document.getElementById('setting-providerKeyOverride');
+    const providerKeyReveal = document.getElementById('setting-providerKeyReveal');
+    const providerKeyLastValidated = document.getElementById('setting-providerKeyLastValidated');
+    const selectedProvider = app.settings.get('apiKeys.selectedProvider') || 'openai';
+
+    if (providerSelect) {
+        providerSelect.value = selectedProvider;
+    }
+    if (providerKeyInput) {
+        providerKeyInput.value = '';
+        providerKeyInput.placeholder = getProviderPlaceholder(selectedProvider);
+    }
+    if (providerKeyHelp) {
+        providerKeyHelp.textContent = getProviderHelp(selectedProvider);
+    }
+    if (providerKeyWarning) {
+        providerKeyWarning.textContent = '';
+    }
+    if (providerKeyOverride) {
+        providerKeyOverride.checked = getProviderOverride(selectedProvider);
+    }
+    if (providerKeyReveal) {
+        providerKeyReveal.checked = false;
+    }
+    if (providerKeyStatus) {
+        providerKeyStatus.textContent = formatProviderStatus(selectedProvider, getProviderStatus(selectedProvider));
+    }
+    if (providerKeyBadge) {
+        providerKeyBadge.textContent = ApiKeyUtils.formatProviderBadge(getProviderStatus(selectedProvider));
+    }
+    if (providerKeyLastValidated) {
+        providerKeyLastValidated.textContent = ApiKeyUtils.formatLastValidated(getProviderLastValidated(selectedProvider));
+    }
+    updateApiKeyButtons();
 }
 
 function saveSettingsModal(app) {
     // Save behavior settings
     app.settings.set('filterToggleBehavior', document.getElementById('setting-filterToggleBehavior').checked);
     app.settings.set('autoSave', document.getElementById('setting-autoSave').checked);
+    app.settings.set('disableTooltips', document.getElementById('setting-disableTooltips').checked);
     app.settings.set('defaultView', document.getElementById('setting-defaultView').value);
+    const telemetryToggle = document.getElementById('setting-telemetryEnabled');
+    if (telemetryToggle) {
+        app.settings.set('telemetry.enabled', telemetryToggle.checked);
+    }
+    const requireTestsToggle = document.getElementById('setting-requireTests');
+    if (requireTestsToggle) {
+        app.settings.set('developer.requireTests', requireTestsToggle.checked);
+    }
+
+    app.applyTooltipSetting();
 
     showToast('Settings saved');
     closeSettingsModal();
@@ -146,6 +212,523 @@ function exportData(app) {
         console.error('Export failed:', error);
         showToast('Export failed');
     });
+}
+
+function bindApiKeyHandlers(app) {
+    const providerSelect = document.getElementById('setting-providerSelect');
+    const providerKeyInput = document.getElementById('setting-providerKey');
+    const validateBtn = document.getElementById('validateProviderKey');
+    const saveBtn = document.getElementById('saveProviderKey');
+    const deleteBtn = document.getElementById('deleteProviderKey');
+    const revalidateBtn = document.getElementById('revalidateProviderKeys');
+    const providerKeyOverride = document.getElementById('setting-providerKeyOverride');
+    const providerKeyReveal = document.getElementById('setting-providerKeyReveal');
+
+    if (providerSelect) {
+        providerSelect.onchange = () => {
+            const provider = getCurrentProvider();
+            if (app) {
+                app.settings.set('apiKeys.selectedProvider', provider);
+            }
+            if (providerKeyInput) {
+                providerKeyInput.value = '';
+                providerKeyInput.placeholder = getProviderPlaceholder(provider);
+            }
+            const providerKeyHelp = document.getElementById('setting-providerKeyHelp');
+            if (providerKeyHelp) {
+                providerKeyHelp.textContent = getProviderHelp(provider);
+            }
+            const providerKeyWarning = document.getElementById('setting-providerKeyWarning');
+            if (providerKeyWarning) {
+                providerKeyWarning.textContent = '';
+            }
+            if (providerKeyOverride) {
+                providerKeyOverride.checked = getProviderOverride(provider);
+            }
+            if (providerKeyReveal && providerKeyInput) {
+                providerKeyReveal.checked = false;
+                providerKeyInput.type = 'password';
+            }
+            const status = getProviderStatus(provider);
+            setProviderStatus(provider, status);
+            setProviderLastValidated(provider, getProviderLastValidated(provider));
+            updateApiKeyButtons();
+            refreshProviderKeyStatus(provider);
+        };
+    }
+    if (providerKeyInput) {
+        providerKeyInput.oninput = () => updateApiKeyButtons();
+    }
+    if (providerKeyOverride) {
+        providerKeyOverride.onchange = () => {
+            setProviderOverride(getCurrentProvider(), providerKeyOverride.checked);
+            updateApiKeyButtons();
+        };
+    }
+    if (providerKeyReveal && providerKeyInput) {
+        providerKeyReveal.onchange = () => {
+            providerKeyInput.type = providerKeyReveal.checked ? 'text' : 'password';
+        };
+    }
+    if (validateBtn) {
+        validateBtn.onclick = () => handleApiKeyAction('validate');
+    }
+    if (saveBtn) {
+        saveBtn.onclick = () => handleApiKeyAction('save');
+    }
+    if (deleteBtn) {
+        deleteBtn.onclick = () => handleApiKeyAction('delete');
+    }
+    if (revalidateBtn) {
+        revalidateBtn.onclick = () => {
+            revalidateAllProviderKeys().catch((error) => {
+                console.warn('Re-validation failed:', error);
+                showToast('Re-validation failed');
+            });
+        };
+    }
+}
+
+function updateApiKeyButtons() {
+    const providerKeyInput = document.getElementById('setting-providerKey');
+    const validateBtn = document.getElementById('validateProviderKey');
+    const saveBtn = document.getElementById('saveProviderKey');
+    const deleteBtn = document.getElementById('deleteProviderKey');
+    const revalidateBtn = document.getElementById('revalidateProviderKeys');
+    const providerKeyOverride = document.getElementById('setting-providerKeyOverride');
+    const hasKey = providerKeyInput && providerKeyInput.value.trim().length > 0;
+    const provider = getCurrentProvider();
+    const validation = ApiKeyUtils.validateProviderKey(provider, providerKeyInput ? providerKeyInput.value.trim() : '');
+    updateProviderKeyWarning(validation);
+    const allowInvalid = providerKeyOverride && providerKeyOverride.checked;
+    const hasStoredKey = providerHasStoredKey(provider);
+    const hasAnyStoredKeys = providerHasAnyStoredKeys();
+
+    if (validateBtn) {
+        validateBtn.disabled = !hasStoredKey;
+    }
+    if (saveBtn) {
+        saveBtn.disabled = !hasKey || (!validation.isValid && !allowInvalid);
+    }
+    if (deleteBtn) {
+        deleteBtn.disabled = !hasStoredKey;
+    }
+    if (revalidateBtn) {
+        revalidateBtn.disabled = !hasAnyStoredKeys;
+    }
+}
+
+function handleApiKeyAction(action) {
+    const providerKeyInput = document.getElementById('setting-providerKey');
+    const keyValue = providerKeyInput ? providerKeyInput.value.trim() : '';
+    const provider = getCurrentProvider();
+
+    if (action !== 'delete' && !keyValue) {
+        showToast('Enter a key first');
+        return;
+    }
+
+    if (action === 'validate') {
+        if (!providerHasStoredKey(provider)) {
+            showToast('Save a key first');
+            return;
+        }
+        if (!window.electronAPI || typeof window.electronAPI.validateProviderKey !== 'function') {
+            setProviderStatus(provider, 'Validation unavailable');
+            showToast('Validation unavailable');
+            return;
+        }
+        setProviderStatus(provider, 'Validating...');
+        window.electronAPI.validateProviderKey(provider).then((result) => {
+            setProviderLastValidated(provider, new Date().toISOString());
+            if (result && result.ok) {
+                setProviderStatus(provider, 'Valid');
+                updateProviderKeyHelpText(provider, true);
+                showToast('Key validated');
+            } else {
+                const status = getValidationErrorMessage(result);
+                setProviderStatus(provider, status);
+                setProviderKeyHelpMessage(getValidationHelpMessage(result, provider), provider);
+                showToast('Key validation failed');
+            }
+            updateApiKeyButtons();
+        });
+        return;
+    }
+
+    if (action === 'save') {
+        if (!window.electronAPI || typeof window.electronAPI.setProviderKey !== 'function') {
+            setProviderStatus(provider, 'Storage unavailable');
+            showToast('Key storage unavailable');
+            return;
+        }
+        window.electronAPI.setProviderKey(provider, keyValue).then((result) => {
+            if (result && result.ok) {
+                if (providerKeyInput) {
+                    providerKeyInput.value = '';
+                }
+                setProviderHasStoredKey(provider, true);
+                setProviderStatus(provider, 'Stored');
+                updateProviderKeyHelpText(provider, true);
+                updateApiKeyButtons();
+                showToast('Key saved to keychain');
+            } else {
+                setProviderStatus(provider, getStorageErrorMessage(result));
+                setProviderKeyHelpMessage(getStorageHelpMessage(result, provider), provider);
+                showToast('Failed to save key');
+            }
+        });
+        return;
+    }
+
+    if (action === 'delete') {
+        if (!window.electronAPI || typeof window.electronAPI.deleteProviderKey !== 'function') {
+            setProviderStatus(provider, 'Storage unavailable');
+            showToast('Key storage unavailable');
+            return;
+        }
+        if (!confirm(`Remove stored key for ${providerLabels[provider] || provider}?`)) {
+            return;
+        }
+        window.electronAPI.deleteProviderKey(provider).then((result) => {
+            if (result && result.ok) {
+                setProviderHasStoredKey(provider, false);
+                setProviderStatus(provider, 'Not configured');
+                setProviderLastValidated(provider, null);
+                updateProviderKeyHelpText(provider, false);
+                updateApiKeyButtons();
+                showToast('Key removed');
+            } else {
+                setProviderStatus(provider, getStorageErrorMessage(result));
+                setProviderKeyHelpMessage(getStorageHelpMessage(result, provider), provider);
+                showToast('Failed to remove key');
+            }
+        });
+    }
+}
+
+let apiKeySettingsApp = null;
+const providerStorageById = {};
+
+const providerLabels = {
+    openai: 'OpenAI',
+    anthropic: 'Anthropic',
+    google: 'Google',
+    openrouter: 'OpenRouter',
+    mistral: 'Mistral',
+};
+
+const providerPlaceholders = {
+    openai: 'sk-...',
+    anthropic: 'sk-ant-...',
+    google: 'AIza...',
+    openrouter: 'sk-or-...',
+    mistral: 'sk-...',
+};
+
+const providerHelpText = {
+    openai: 'Keys are not saved yet in this build.',
+    anthropic: 'Keys are not saved yet in this build.',
+    google: 'Use a Google AI Studio key. Keys are not saved yet in this build.',
+    openrouter: 'Keys are not saved yet in this build.',
+    mistral: 'Keys are not saved yet in this build.',
+};
+
+function getCurrentProvider() {
+    const providerSelect = document.getElementById('setting-providerSelect');
+    return providerSelect ? providerSelect.value : 'openai';
+}
+
+function getProviderPlaceholder(provider) {
+    return providerPlaceholders[provider] || 'Paste your key';
+}
+
+function getProviderHelp(provider) {
+    return providerHelpText[provider] || 'Keys are not saved yet in this build.';
+}
+
+function getAllProviders() {
+    return Object.keys(providerLabels);
+}
+
+function updateProviderKeyWarning(validation) {
+    const providerKeyWarning = document.getElementById('setting-providerKeyWarning');
+    if (!providerKeyWarning) {
+        return;
+    }
+    providerKeyWarning.textContent = validation.message;
+}
+
+function formatProviderStatus(provider, status) {
+    const label = providerLabels[provider] || provider;
+    return `${label}: ${status}`;
+}
+
+function getProviderStatus(provider) {
+    return getApiKeySetting(`apiKeys.statuses.${provider}`, 'Not configured');
+}
+
+function getProviderLastValidated(provider) {
+    return getApiKeySetting(`apiKeys.lastValidatedAt.${provider}`, null);
+}
+
+function getProviderOverride(provider) {
+    return getApiKeySetting(`apiKeys.overrides.${provider}`, false);
+}
+
+function setProviderOverride(provider, value) {
+    setApiKeySetting(`apiKeys.overrides.${provider}`, value);
+}
+
+function setProviderStatus(provider, status) {
+    setApiKeySetting(`apiKeys.statuses.${provider}`, status);
+    if (isCurrentProvider(provider)) {
+        const providerKeyStatus = document.getElementById('setting-providerKeyStatus');
+        const providerKeyBadge = document.getElementById('setting-providerKeyBadge');
+        if (providerKeyStatus) {
+            providerKeyStatus.textContent = formatProviderStatus(provider, status);
+        }
+        if (providerKeyBadge) {
+            providerKeyBadge.textContent = ApiKeyUtils.formatProviderBadge(status);
+        }
+    }
+}
+
+function setProviderLastValidated(provider, value) {
+    setApiKeySetting(`apiKeys.lastValidatedAt.${provider}`, value);
+    if (isCurrentProvider(provider)) {
+        const providerKeyLastValidated = document.getElementById('setting-providerKeyLastValidated');
+        if (providerKeyLastValidated) {
+            providerKeyLastValidated.textContent = ApiKeyUtils.formatLastValidated(value);
+        }
+    }
+}
+
+function isCurrentProvider(provider) {
+    return getCurrentProvider() === provider;
+}
+
+function providerHasStoredKey(provider) {
+    return providerStorageById[provider] || false;
+}
+
+function setProviderHasStoredKey(provider, value) {
+    providerStorageById[provider] = value;
+}
+
+function providerHasAnyStoredKeys() {
+    return Object.values(providerStorageById).some(Boolean);
+}
+
+function refreshProviderKeyStatus(provider) {
+    if (!window.electronAPI || typeof window.electronAPI.getProviderKey !== 'function') {
+        setProviderStatus(provider, 'Storage unavailable');
+        return;
+    }
+    window.electronAPI.getProviderKey(provider).then((result) => {
+        if (result && result.ok) {
+            const hasKey = !!result.hasKey;
+            const existingStatus = getProviderStatus(provider);
+            setProviderHasStoredKey(provider, hasKey);
+            if (!hasKey) {
+                setProviderStatus(provider, 'Not configured');
+            } else if (existingStatus !== 'Valid' && existingStatus !== 'Invalid') {
+                setProviderStatus(provider, 'Stored');
+            }
+            updateProviderKeyHelpText(provider, hasKey);
+            updateApiKeyButtons();
+        } else {
+            setProviderHasStoredKey(provider, false);
+            setProviderStatus(provider, getStorageErrorMessage(result));
+            setProviderKeyHelpMessage(getStorageHelpMessage(result, provider), provider);
+            updateApiKeyButtons();
+        }
+    });
+}
+
+function refreshAllProviderKeyStatus() {
+    if (!window.electronAPI || typeof window.electronAPI.getProviderKey !== 'function') {
+        setProviderStatus(getCurrentProvider(), 'Storage unavailable');
+        return;
+    }
+    const providers = getAllProviders();
+    Promise.all(
+        providers.map((provider) =>
+            window.electronAPI.getProviderKey(provider).then((result) => {
+                if (result && result.ok) {
+                    const hasKey = !!result.hasKey;
+                    const existingStatus = getProviderStatus(provider);
+                    setProviderHasStoredKey(provider, hasKey);
+                    if (!hasKey) {
+                        setProviderStatus(provider, 'Not configured');
+                    } else if (existingStatus !== 'Valid' && existingStatus !== 'Invalid') {
+                        setProviderStatus(provider, 'Stored');
+                    }
+                    updateProviderKeyHelpText(provider, hasKey);
+                } else {
+                    setProviderHasStoredKey(provider, false);
+                    setProviderStatus(provider, getStorageErrorMessage(result));
+                    setProviderKeyHelpMessage(getStorageHelpMessage(result, provider), provider);
+                }
+            })
+        )
+    ).finally(() => {
+        updateApiKeyButtons();
+    });
+}
+
+function updateProviderKeyHelpText(provider, hasStoredKey) {
+    if (!isCurrentProvider(provider)) {
+        return;
+    }
+    const providerKeyHelp = document.getElementById('setting-providerKeyHelp');
+    if (!providerKeyHelp) {
+        return;
+    }
+    providerKeyHelp.textContent = hasStoredKey
+        ? 'Key stored in keychain. Saving will overwrite it.'
+        : getProviderHelp(provider);
+}
+
+function setProviderKeyHelpMessage(message, provider = getCurrentProvider()) {
+    if (!isCurrentProvider(provider)) {
+        return;
+    }
+    const providerKeyHelp = document.getElementById('setting-providerKeyHelp');
+    if (!providerKeyHelp) {
+        return;
+    }
+    providerKeyHelp.textContent = message;
+}
+
+function getStorageErrorMessage(result) {
+    const error = result && result.error ? result.error : 'Storage unavailable';
+    if (error === 'encryption-unavailable') {
+        return 'Keychain unavailable';
+    }
+    if (error === 'decrypt-failed') {
+        return 'Keychain unreadable';
+    }
+    if (error === 'invalid-provider' || error === 'invalid-value') {
+        return 'Invalid key data';
+    }
+    return 'Storage unavailable';
+}
+
+function getValidationErrorMessage(result) {
+    const error = result && result.error ? result.error : 'validation-failed';
+    if (error === 'invalid-key') {
+        return 'Invalid';
+    }
+    if (error === 'missing-key') {
+        return 'Not configured';
+    }
+    if (error === 'timeout') {
+        return 'Validation timed out';
+    }
+    if (error === 'network-error') {
+        return 'Network error';
+    }
+    if (error === 'unsupported-provider') {
+        return 'Validation unsupported';
+    }
+    if (error === 'encryption-unavailable') {
+        return 'Keychain unavailable';
+    }
+    if (error === 'decrypt-failed') {
+        return 'Keychain unreadable';
+    }
+    return 'Validation failed';
+}
+
+function getValidationHelpMessage(result, provider) {
+    const error = result && result.error ? result.error : 'validation-failed';
+    if (error === 'invalid-key') {
+        return 'Stored key was rejected by the provider.';
+    }
+    if (error === 'missing-key') {
+        return 'Save a key before validating.';
+    }
+    if (error === 'timeout') {
+        return 'Validation timed out. Try again.';
+    }
+    if (error === 'network-error') {
+        return 'Network error while contacting the provider.';
+    }
+    if (error === 'unsupported-provider') {
+        return 'Validation is only wired for OpenAI, Anthropic, and Google.';
+    }
+    if (error === 'encryption-unavailable') {
+        return 'Keychain unavailable on this device.';
+    }
+    if (error === 'decrypt-failed') {
+        return 'Stored key could not be read. Remove and re-save.';
+    }
+    return getProviderHelp(provider);
+}
+
+function getStorageHelpMessage(result, provider) {
+    const error = result && result.error ? result.error : null;
+    if (error === 'encryption-unavailable') {
+        return 'Keychain unavailable on this device.';
+    }
+    if (error === 'decrypt-failed') {
+        return 'Stored key could not be read. Remove and re-save.';
+    }
+    if (error === 'invalid-provider' || error === 'invalid-value') {
+        return 'Key data was invalid. Try re-entering.';
+    }
+    return getProviderHelp(provider);
+}
+
+async function revalidateAllProviderKeys() {
+    if (!window.electronAPI || typeof window.electronAPI.validateProviderKey !== 'function') {
+        showToast('Validation unavailable');
+        return;
+    }
+
+    const providers = getAllProviders();
+    let successCount = 0;
+    let failureCount = 0;
+    let skippedCount = 0;
+
+    for (const provider of providers) {
+        if (!providerHasStoredKey(provider)) {
+            skippedCount += 1;
+            continue;
+        }
+        const result = await window.electronAPI.validateProviderKey(provider);
+        setProviderLastValidated(provider, new Date().toISOString());
+        if (result && result.ok) {
+            setProviderStatus(provider, 'Valid');
+            updateProviderKeyHelpText(provider, true);
+            successCount += 1;
+        } else {
+            const status = getValidationErrorMessage(result);
+            setProviderStatus(provider, status);
+            setProviderKeyHelpMessage(getValidationHelpMessage(result, provider), provider);
+            failureCount += 1;
+        }
+    }
+
+    const summary = `Validated ${successCount} ok, ${failureCount} failed, ${skippedCount} skipped`;
+    showToast(summary);
+    updateApiKeyButtons();
+}
+
+function getApiKeySetting(path, fallback) {
+    if (!apiKeySettingsApp || !apiKeySettingsApp.settings) {
+        return fallback;
+    }
+    const value = apiKeySettingsApp.settings.get(path);
+    return value === undefined ? fallback : value;
+}
+
+function setApiKeySetting(path, value) {
+    if (!apiKeySettingsApp || !apiKeySettingsApp.settings) {
+        return;
+    }
+    apiKeySettingsApp.settings.set(path, value);
 }
 
 function importData(app, event) {
@@ -415,4 +998,24 @@ async function importDataToApi(app, importedData) {
     app.store.relatedTasks = new Map(Object.entries(remappedRelated));
     app.store.saveState();
     app.store.notify();
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        updateApiKeyButtons,
+        bindApiKeyHandlers,
+        handleApiKeyAction,
+        setProviderHasStoredKey,
+        providerHasStoredKey,
+        providerHasAnyStoredKeys,
+        refreshProviderKeyStatus,
+        refreshAllProviderKeyStatus,
+        setProviderStatus,
+        setProviderLastValidated,
+        getProviderStatus,
+        getProviderLastValidated,
+        getProviderOverride,
+        setProviderOverride,
+        populateSettingsModal,
+    };
 }

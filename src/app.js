@@ -322,6 +322,8 @@ class App {
                 renderMindMapView(this, container);
                 break;
         }
+
+        this.applyTooltipSetting();
     }
 
     renderProjectSidebar() {
@@ -672,6 +674,8 @@ class App {
             </div>
         `;
 
+        this.applyTooltipSetting();
+
         // Back button
         container.querySelector('#backToView').addEventListener('click', () => {
             this.currentProjectSettings = null;
@@ -780,6 +784,24 @@ class App {
                 this.store.deleteProject(projectId);
                 this.showToast('Project deleted');
                 this.render();
+            }
+        });
+    }
+
+    applyTooltipSetting() {
+        const disableTooltips = this.settings.get('disableTooltips');
+        document.querySelectorAll('[title], [data-tooltip-title]').forEach(element => {
+            if (disableTooltips) {
+                const title = element.getAttribute('title');
+                if (title) {
+                    element.setAttribute('data-tooltip-title', title);
+                    element.removeAttribute('title');
+                }
+                return;
+            }
+            if (!element.getAttribute('title') && element.dataset.tooltipTitle) {
+                element.setAttribute('title', element.dataset.tooltipTitle);
+                element.removeAttribute('data-tooltip-title');
             }
         });
     }

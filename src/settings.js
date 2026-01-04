@@ -13,6 +13,19 @@
                     defaultView: 'outline',
                     darkMode: false,
                     autoSave: true,
+                    disableTooltips: false,
+                    apiKeys: {
+                        selectedProvider: 'openai',
+                        overrides: {},
+                        statuses: {},
+                        lastValidatedAt: {}
+                    },
+                    telemetry: {
+                        enabled: false
+                    },
+                    developer: {
+                        requireTests: true
+                    },
 
                     // View-specific settings
                     outline: {
