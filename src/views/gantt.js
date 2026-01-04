@@ -242,6 +242,8 @@ function renderGanttView(app, container) {
             }
         }
 
+        const taskPaneWidth = app.store.ganttTaskPaneWidth || 250;
+
         container.innerHTML = `
             <div class="gantt-view">
                 <div class="gantt-controls">
@@ -251,7 +253,7 @@ function renderGanttView(app, container) {
                     <button class="gantt-zoom-btn ${zoomLevel === 'days' ? 'active' : ''}" data-zoom="days">Days</button>
                 </div>
                 <div class="gantt-container">
-                    <div class="gantt-grid">
+                    <div class="gantt-grid" style="grid-template-columns: ${taskPaneWidth}px 6px 1fr;">
                         <div class="gantt-tasks">
                             <div class="gantt-header">Tasks</div>
                             ${taskRows.map(row => {
@@ -287,6 +289,7 @@ function renderGanttView(app, container) {
                                 `}
                             }).join('')}
                         </div>
+                        <div class="gantt-resizer" data-gantt-resizer></div>
                         <div class="gantt-timeline" style="min-width: ${timelineWidth}px">
                             <div class="gantt-timeline-header">
                                 ${periods.map(p => `
@@ -358,6 +361,36 @@ function renderGanttView(app, container) {
             }
         };
         requestAnimationFrame(syncRowHeights);
+
+        const resizer = container.querySelector('[data-gantt-resizer]');
+        if (resizer) {
+            resizer.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                const grid = container.querySelector('.gantt-grid');
+                const containerRect = container.querySelector('.gantt-container').getBoundingClientRect();
+                const minWidth = 200;
+                const maxWidth = Math.max(minWidth, Math.min(600, containerRect.width - 200));
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none';
+
+                const handleMove = (event) => {
+                    const nextWidth = Math.max(minWidth, Math.min(maxWidth, event.clientX - containerRect.left));
+                    app.store.ganttTaskPaneWidth = Math.round(nextWidth);
+                    grid.style.gridTemplateColumns = `${app.store.ganttTaskPaneWidth}px 6px 1fr`;
+                    syncRowHeights();
+                };
+
+                const handleUp = () => {
+                    document.removeEventListener('mousemove', handleMove);
+                    document.removeEventListener('mouseup', handleUp);
+                    document.body.style.cursor = '';
+                    document.body.style.userSelect = '';
+                };
+
+                document.addEventListener('mousemove', handleMove);
+                document.addEventListener('mouseup', handleUp);
+            });
+        }
 
         // Collapse/expand buttons for tasks
         container.querySelectorAll('[data-gantt-collapse]').forEach(btn => {
