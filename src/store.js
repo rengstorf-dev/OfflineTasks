@@ -38,6 +38,11 @@
                     '#14B8A6'  // teal
                 ];
 
+                // Teams system
+                this.teams = []; // Array of {id, name, members, defaultMember}
+                this.nextTeamId = 1;
+                this.teamIdGenerator = () => `team-${this.nextTeamId++}`;
+
                 // View-specific display settings
                 // Outline
                 this.showAssigneeInOutline = true;
@@ -79,7 +84,9 @@
                     dependencies: new Map(this.dependencies),
                     nextId: this.nextId,
                     projects: JSON.parse(JSON.stringify(this.projects)),
-                    nextProjectId: this.nextProjectId
+                    nextProjectId: this.nextProjectId,
+                    teams: JSON.parse(JSON.stringify(this.teams)),
+                    nextTeamId: this.nextTeamId
                 };
                 
                 // Remove any states after current index (when making changes after undo)
@@ -126,6 +133,10 @@
                     this.projects = JSON.parse(JSON.stringify(state.projects));
                     this.nextProjectId = state.nextProjectId;
                 }
+                if (state.teams) {
+                    this.teams = JSON.parse(JSON.stringify(state.teams));
+                    this.nextTeamId = state.nextTeamId || this.nextTeamId;
+                }
             }
 
             subscribe(callback) {
@@ -137,6 +148,7 @@
                 if (uuidGenerator) {
                     this.idGenerator = uuidGenerator;
                     this.projectIdGenerator = uuidGenerator;
+                    this.teamIdGenerator = uuidGenerator;
                 }
             }
 
@@ -146,6 +158,10 @@
 
             generateProjectId() {
                 return this.projectIdGenerator();
+            }
+
+            generateTeamId() {
+                return this.teamIdGenerator();
             }
 
             notify() {
@@ -1051,5 +1067,37 @@
                 }
 
                 return groups;
+            }
+
+            // ========== Team Methods ==========
+
+            getTeams() {
+                return this.teams;
+            }
+
+            addTeam(name) {
+                const team = {
+                    id: this.generateTeamId(),
+                    name,
+                    members: [],
+                    defaultMember: ''
+                };
+                this.teams.push(team);
+                this.saveState();
+                this.notify();
+                return team.id;
+            }
+
+            updateTeam(teamId, updates) {
+                const team = this.teams.find(t => t.id === teamId);
+                if (!team) return false;
+
+                if (updates.name !== undefined) team.name = updates.name;
+                if (updates.members !== undefined) team.members = updates.members;
+                if (updates.defaultMember !== undefined) team.defaultMember = updates.defaultMember;
+
+                this.saveState();
+                this.notify();
+                return true;
             }
         }

@@ -26,6 +26,7 @@
                     developer: {
                         requireTests: true
                     },
+                    teams: [],
 
                     // View-specific settings
                     outline: {

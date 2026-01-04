@@ -71,6 +71,12 @@ class App {
             this.store.selectedProjectIds = new Set(savedSelectedProjectIds);
         }
 
+        const savedTeams = this.settings.get('teams');
+        if (Array.isArray(savedTeams)) {
+            this.store.teams = savedTeams;
+            this.store.nextTeamId = savedTeams.length + 1;
+        }
+
         this.store.subscribe(() => this.render());
         this.setupEventListeners();
         this.initApiStatus();
@@ -282,6 +288,13 @@ class App {
         document.getElementById('addProjectBtn').addEventListener('click', () => {
             this.showNewProjectInput();
         });
+
+        const addTeamBtn = document.getElementById('addTeamBtn');
+        if (addTeamBtn) {
+            addTeamBtn.addEventListener('click', () => {
+                this.showNewTeamInput();
+            });
+        }
     }
 
     render() {
@@ -291,6 +304,10 @@ class App {
         // If viewing project settings, re-render that instead
         if (this.currentProjectSettings) {
             this.showProjectSettings(this.currentProjectSettings);
+            return;
+        }
+        if (this.currentTeamSettings) {
+            this.showTeamSettings(this.currentTeamSettings);
             return;
         }
 
@@ -394,6 +411,21 @@ class App {
 
         projectList.innerHTML = html;
 
+        const teamList = document.getElementById('teamList');
+        if (teamList) {
+            const teams = this.store.getTeams ? this.store.getTeams() : (this.store.teams || []);
+            if (teams.length === 0) {
+                teamList.innerHTML = '<div class="sidebar-placeholder">No teams yet</div>';
+            } else {
+                teamList.innerHTML = teams.map(team => `
+                    <div class="team-item" data-team-id="${team.id}">
+                        <span class="team-item-name">${team.name}</span>
+                        <button class="team-settings-btn" data-team-settings="${team.id}" title="Team Settings">⚙</button>
+                    </div>
+                `).join('');
+            }
+        }
+
         // Bind click and drag-drop handlers
         projectList.querySelectorAll('.project-item').forEach(item => {
             const projectId = item.dataset.projectId;
@@ -459,6 +491,16 @@ class App {
                 this.showProjectSettings(projectId);
             });
         });
+
+        if (teamList) {
+            teamList.querySelectorAll('.team-settings-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const teamId = btn.dataset.teamSettings;
+                    this.showTeamSettings(teamId);
+                });
+            });
+        }
     }
 
     selectProject(projectId) {
@@ -801,6 +843,229 @@ class App {
                 this.showToast('Project deleted');
                 this.render();
             }
+        });
+    }
+
+    showNewTeamInput() {
+        const addBtn = document.getElementById('addTeamBtn');
+        if (!addBtn) return;
+
+        const wrapper = document.createElement('div');
+        wrapper.className = 'new-project-input-wrapper';
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'new-project-input';
+        input.placeholder = 'Team name...';
+        wrapper.appendChild(input);
+
+        addBtn.parentNode.insertBefore(wrapper, addBtn);
+        addBtn.style.display = 'none';
+        input.focus();
+
+        const cleanup = () => {
+            wrapper.remove();
+            addBtn.style.display = '';
+        };
+
+        const createTeam = () => {
+            const name = input.value.trim();
+            if (name) {
+                this.store.addTeam(name);
+                this.settings.set('teams', this.store.teams);
+            }
+            cleanup();
+        };
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                createTeam();
+            } else if (e.key === 'Escape') {
+                cleanup();
+            }
+        });
+
+        input.addEventListener('blur', () => {
+            setTimeout(cleanup, 150);
+        });
+    }
+
+    showTeamSettings(teamId) {
+        const team = this.store.teams.find(t => t.id === teamId);
+        if (!team) {
+            this.currentTeamSettings = null;
+            this.render();
+            return;
+        }
+
+        this.currentTeamSettings = teamId;
+
+        document.querySelector('.toolbar').style.display = 'none';
+        document.querySelector('.settings-pane').style.display = 'none';
+
+        const container = document.getElementById('viewContainer');
+        const members = team.members || [];
+        const defaultMember = team.defaultMember || '';
+        container.innerHTML = `
+            <div class="project-settings-page team-settings-page">
+                <div class="project-settings-header">
+                    <button class="back-btn" id="backToView">← Back</button>
+                    <h2>Team Settings</h2>
+                </div>
+
+                <div class="project-settings-content">
+                    <div class="settings-section">
+                        <h3>General</h3>
+                        <div class="settings-field">
+                            <label>Team Name</label>
+                            <input type="text" class="settings-input" id="teamName" value="${team.name}">
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3>Members</h3>
+                        <div class="settings-field">
+                            <label>Add Member</label>
+                            <div class="new-project-input-wrapper">
+                                <input type="text" class="new-project-input" id="teamMemberInput" placeholder="Member name...">
+                                <button class="btn btn-secondary" id="addTeamMemberBtn">Add</button>
+                            </div>
+                        </div>
+                        <div class="settings-field" id="teamMembersList">
+                            ${members.length === 0 ? '<div class="settings-info">No members yet.</div>' : ''}
+                            ${members.map(member => `
+                                <div class="team-member-row" data-member="${member}">
+                                    <label class="team-member-label">
+                                        <input type="radio" name="teamDefault" value="${member}" ${defaultMember === member ? 'checked' : ''}>
+                                        <span class="team-member-name">${member}</span>
+                                    </label>
+                                    <div class="team-member-actions">
+                                        <button class="btn btn-secondary team-member-edit" data-member="${member}">Edit</button>
+                                        <button class="btn btn-secondary team-member-remove" data-member="${member}">Remove</button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        this.applyTooltipSetting();
+
+        container.querySelector('#backToView').addEventListener('click', () => {
+            this.currentTeamSettings = null;
+            this.render();
+        });
+
+        const persistTeams = () => {
+            this.settings.set('teams', this.store.teams);
+        };
+
+        const nameInput = container.querySelector('#teamName');
+        nameInput.addEventListener('input', () => {
+            const newName = nameInput.value.trim();
+            if (!newName) return;
+            this.store.updateTeam(teamId, { name: newName });
+            persistTeams();
+            this.renderProjectSidebar();
+        });
+
+        const memberInput = container.querySelector('#teamMemberInput');
+        const addMemberBtn = container.querySelector('#addTeamMemberBtn');
+        const addMember = () => {
+            const name = memberInput.value.trim();
+            if (!name) return;
+            const currentMembers = team.members || [];
+            if (currentMembers.includes(name)) {
+                memberInput.value = '';
+                return;
+            }
+            const nextMembers = [...currentMembers, name];
+            const nextDefault = team.defaultMember || name;
+            this.store.updateTeam(teamId, { members: nextMembers, defaultMember: nextDefault });
+            persistTeams();
+            this.showTeamSettings(teamId);
+        };
+        addMemberBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            addMember();
+        });
+        memberInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addMember();
+            }
+        });
+
+        container.querySelectorAll('input[name="teamDefault"]').forEach(input => {
+            input.addEventListener('change', () => {
+                const value = input.value;
+                this.store.updateTeam(teamId, { defaultMember: value });
+                persistTeams();
+            });
+        });
+
+        container.querySelectorAll('.team-member-edit').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const member = btn.dataset.member;
+                const row = btn.closest('.team-member-row');
+                if (!row) return;
+                const label = row.querySelector('.team-member-label');
+                const nameSpan = row.querySelector('.team-member-name');
+                if (!label || !nameSpan) return;
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'new-project-input';
+                input.value = member;
+                label.replaceChild(input, nameSpan);
+                input.focus();
+                input.select();
+
+                const save = () => {
+                    const nextName = input.value.trim();
+                    if (!nextName) {
+                        this.showTeamSettings(teamId);
+                        return;
+                    }
+                    const currentMembers = team.members || [];
+                    if (currentMembers.includes(nextName) && nextName !== member) {
+                        this.showTeamSettings(teamId);
+                        return;
+                    }
+                    const nextMembers = currentMembers.map(m => (m === member ? nextName : m));
+                    const nextDefault = team.defaultMember === member ? nextName : team.defaultMember;
+                    this.store.updateTeam(teamId, { members: nextMembers, defaultMember: nextDefault });
+                    persistTeams();
+                    this.showTeamSettings(teamId);
+                };
+
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        save();
+                    } else if (e.key === 'Escape') {
+                        this.showTeamSettings(teamId);
+                    }
+                });
+
+                input.addEventListener('blur', () => {
+                    save();
+                });
+            });
+        });
+
+        container.querySelectorAll('.team-member-remove').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const member = btn.dataset.member;
+                const nextMembers = (team.members || []).filter(m => m !== member);
+                const nextDefault = team.defaultMember === member ? (nextMembers[0] || '') : team.defaultMember;
+                this.store.updateTeam(teamId, { members: nextMembers, defaultMember: nextDefault });
+                persistTeams();
+                this.showTeamSettings(teamId);
+            });
         });
     }
 

@@ -604,6 +604,13 @@
             letter-spacing: 0.5px;
         }
 
+        .sidebar-section-header.teams-label {
+            font-size: 14px;
+            text-transform: none;
+            color: #374151;
+            letter-spacing: 0;
+        }
+
         .sidebar-placeholder {
             font-size: 12px;
             color: #9ca3af;
@@ -657,6 +664,35 @@
             display: flex;
             flex-direction: column;
             gap: 2px;
+        }
+
+        .team-list {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .team-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #374151;
+            transition: background 0.15s;
+        }
+
+        .team-item:hover {
+            background: #e5e7eb;
+        }
+
+        .team-item-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .project-item {
@@ -730,6 +766,32 @@
         }
 
         body.dark-mode .project-settings-btn:hover {
+            background: #343434;
+            color: #f6f6f6;
+        }
+
+        .team-settings-btn {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            color: #9ca3af;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: auto;
+        }
+
+        .team-item:hover .team-settings-btn {
+            display: block;
+        }
+
+        .team-settings-btn:hover {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        body.dark-mode .team-settings-btn:hover {
             background: #343434;
             color: #f6f6f6;
         }
@@ -993,6 +1055,32 @@
             font-size: 13px;
         }
 
+        .team-member-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 6px 0;
+        }
+
+        .team-member-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #374151;
+        }
+
+        body.dark-mode .team-member-label {
+            color: #e8e8e8;
+        }
+
+        .team-member-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
         .new-project-input:focus {
             outline: none;
             border-color: #3b82f6;
@@ -1026,6 +1114,10 @@
             color: #a3a3a3;
         }
 
+        body.dark-mode .sidebar-section-header.teams-label {
+            color: #f6f6f6;
+        }
+
         body.dark-mode .sidebar-placeholder {
             color: #a3a3a3;
         }
@@ -1035,6 +1127,14 @@
         }
 
         body.dark-mode .project-item:hover {
+            background: #262626;
+        }
+
+        body.dark-mode .team-item {
+            color: #e8e8e8;
+        }
+
+        body.dark-mode .team-item:hover {
             background: #262626;
         }
 
