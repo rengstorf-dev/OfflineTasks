@@ -1485,11 +1485,36 @@
             font-size: 14px;
             margin-bottom: 4px;
             min-width: 0;
+            flex: 1 1 auto;
+            width: 100%;
         }
 
         .gantt-task-title-row {
+            display: grid;
+            grid-template-columns: 24px minmax(0, 1fr);
+            column-gap: 4px;
+            align-items: start;
+        }
+
+        .gantt-task-indent {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            width: 24px;
+        }
+
+        .gantt-task-indent-placeholder {
+            display: block;
+            width: 24px;
+            height: 1px;
+        }
+
+        .gantt-task-title-content {
+            display: flex;
             flex-wrap: wrap;
             align-items: flex-start;
+            gap: 4px;
+            min-width: 0;
         }
 
         .gantt-task-name {
