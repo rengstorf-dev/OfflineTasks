@@ -150,14 +150,43 @@ function renderGanttView(app, container) {
         // Group filtered root tasks by project
         const groupedByProject = {};
         const unassignedTasks = [];
+        const projects = app.store.getProjects();
+        const viewMode = app.store.projectViewMode;
+        const allowedProjectIds = new Set();
+        let showUnassigned = false;
+
+        if (viewMode === 'project') {
+            if (app.store.selectedProjectId && app.store.selectedProjectId !== 'unassigned') {
+                allowedProjectIds.add(app.store.selectedProjectId);
+            } else if (app.store.selectedProjectId === 'unassigned') {
+                showUnassigned = true;
+            }
+        } else if (viewMode === 'multi') {
+            if (app.store.selectedProjectIds.size === 0) {
+                projects.forEach(project => allowedProjectIds.add(project.id));
+                showUnassigned = true;
+            } else {
+                app.store.selectedProjectIds.forEach(projectId => {
+                    if (projectId === 'unassigned') {
+                        showUnassigned = true;
+                    } else {
+                        allowedProjectIds.add(projectId);
+                    }
+                });
+            }
+        } else {
+            projects.forEach(project => allowedProjectIds.add(project.id));
+            showUnassigned = true;
+        }
+
+        allowedProjectIds.forEach(projectId => {
+            groupedByProject[projectId] = [];
+        });
 
         filteredTasks.forEach(task => {
-            if (task.projectId) {
-                if (!groupedByProject[task.projectId]) {
-                    groupedByProject[task.projectId] = [];
-                }
+            if (task.projectId && groupedByProject[task.projectId]) {
                 groupedByProject[task.projectId].push(task);
-            } else {
+            } else if (!task.projectId && showUnassigned) {
                 unassignedTasks.push(task);
             }
         });
@@ -166,12 +195,10 @@ function renderGanttView(app, container) {
         let taskRows = [];
 
         // Add project groups
-        Object.keys(groupedByProject).forEach(projectId => {
-            const project = app.store.getProject(projectId);
-            if (!project) return;
-
-            const projectTasks = groupedByProject[projectId];
-            const isProjectCollapsed = app.store.ganttProjectsCollapsed.has(projectId);
+        projects.forEach(project => {
+            if (!allowedProjectIds.has(project.id)) return;
+            const projectTasks = groupedByProject[project.id] || [];
+            const isProjectCollapsed = app.store.ganttProjectsCollapsed.has(project.id);
 
             // Add project header row
             taskRows.push({
