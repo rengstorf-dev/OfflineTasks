@@ -278,7 +278,6 @@ function renderGanttView(app, container) {
                                                     `<button class="collapse-btn" data-gantt-collapse="${row.task.id}" style="margin-right: 4px;">${row.isCollapsed ? '▶' : '▼'}</button>` :
                                                     '<span style="display: inline-block; width: 24px;"></span>'
                                                 }
-                                                ${app.store.showPriorityInGantt && row.task.metadata.priority === 'high' ? `<span class="priority-indicator" title="High Priority" style="color: ${app.store.getTaskColors(row.task.id).priorityColors.high};">⚠️</span>` : ''}
                                                 <span class="gantt-task-name">${row.task.title}</span>
                                                 ${app.store.showAssigneeInGantt && row.task.metadata.assignee ? `<span class="assignee" style="margin-left: 8px;">${row.task.metadata.assignee}</span>` : ''}
                                                 ${app.store.getRelatedTasks(row.task.id).length > 0 ? `<span class="related-badge" data-filter-related="${row.task.id}" title="Click to filter by related tasks">⟷ ${app.store.getRelatedTasks(row.task.id).length}</span>` : ''}
@@ -327,7 +326,9 @@ function renderGanttView(app, container) {
 
                                 // Get project-specific status colors (or defaults)
                                 const taskColors = app.store.getTaskColors(task.id);
-                                const barColor = taskColors.statusColors[task.metadata.status] || '#3b82f6';
+                                const barColor = app.store.showPriorityInGantt
+                                    ? (taskColors.priorityColors[task.metadata.priority] || taskColors.priorityColors.medium)
+                                    : (taskColors.statusColors[task.metadata.status] || '#3b82f6');
 
                                 return `
                                     <div class="gantt-bar-row">
