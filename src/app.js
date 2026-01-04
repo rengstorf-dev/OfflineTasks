@@ -450,6 +450,8 @@ class App {
     }
 
     selectProject(projectId) {
+        this.store.selectedParents.clear();
+        this.store.parentFilterInitialized = false;
         // Clear multi-select when doing regular click
         this.store.selectedProjectIds.clear();
 
@@ -478,6 +480,8 @@ class App {
     }
 
     toggleProjectSelection(projectId) {
+        this.store.selectedParents.clear();
+        this.store.parentFilterInitialized = false;
         // If currently in single-select mode, add that project to multi-select first
         if (this.store.projectViewMode === 'project' && this.store.selectedProjectId) {
             this.store.selectedProjectIds.add(this.store.selectedProjectId);
