@@ -42,6 +42,8 @@
                 this.teams = []; // Array of {id, name, members, defaultMember}
                 this.nextTeamId = 1;
                 this.teamIdGenerator = () => `team-${this.nextTeamId++}`;
+                this.teamFilterId = null;
+                this.assigneeFilter = null;
 
                 // View-specific display settings
                 // Outline
@@ -456,7 +458,17 @@
                         // Apply related filter (if set, only show related tasks + the source task)
                         const matchesRelated = !relatedIds || relatedIds.has(task.id);
 
-                        taskCopy._matches = matchesSearch && matchesStatus && matchesRelated;
+                        const assignee = (task.metadata.assignee || '').trim();
+                        let matchesAssignee = true;
+                        if (this.assigneeFilter) {
+                            matchesAssignee = assignee === this.assigneeFilter;
+                        } else if (this.teamFilterId) {
+                            const team = this.getTeam(this.teamFilterId);
+                            const members = team ? (team.members || []) : [];
+                            matchesAssignee = members.includes(assignee);
+                        }
+
+                        taskCopy._matches = matchesSearch && matchesStatus && matchesRelated && matchesAssignee;
 
                         // Recursively filter children
                         if (taskCopy.children && taskCopy.children.length > 0) {
@@ -1075,6 +1087,10 @@
                 return this.teams;
             }
 
+            getTeam(teamId) {
+                return this.teams.find(team => team.id === teamId);
+            }
+
             addTeam(name) {
                 const team = {
                     id: this.generateTeamId(),
@@ -1086,6 +1102,18 @@
                 this.saveState();
                 this.notify();
                 return team.id;
+            }
+
+            setTeamFilter(teamId, memberName = null) {
+                this.teamFilterId = teamId;
+                this.assigneeFilter = memberName || null;
+                this.notify();
+            }
+
+            clearTeamFilter() {
+                this.teamFilterId = null;
+                this.assigneeFilter = null;
+                this.notify();
             }
 
             updateTeam(teamId, updates) {

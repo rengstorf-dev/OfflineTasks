@@ -20,7 +20,12 @@ class App {
         if (this.apiClient && !this.store.apiClient) {
             enableStoreSync(this.apiClient, this.store, this.settings);
         }
+        if (globalThis.ErrorReporting && typeof globalThis.ErrorReporting.init === 'function') {
+            globalThis.ErrorReporting.init({ settings: this.settings });
+            globalThis.ErrorReporting.installGlobalHandlers();
+        }
         this.currentView = this.settings.get('defaultView') || 'outline';
+        this.expandedTeams = new Set();
         this.linkMode = false;
         this.linkSource = null;
         this.relateLinkMode = false;
@@ -418,10 +423,23 @@ class App {
                 teamList.innerHTML = '<div class="sidebar-placeholder">No teams yet</div>';
             } else {
                 teamList.innerHTML = teams.map(team => `
-                    <div class="team-item" data-team-id="${team.id}">
+                    <div class="team-item ${this.store.teamFilterId === team.id && !this.store.assigneeFilter ? 'active' : ''}" data-team-id="${team.id}">
+                        <button class="team-toggle-btn" data-team-toggle="${team.id}">
+                            ${this.expandedTeams.has(team.id) ? '▾' : '▸'}
+                        </button>
                         <span class="team-item-name">${team.name}</span>
                         <button class="team-settings-btn" data-team-settings="${team.id}" title="Team Settings">⚙</button>
                     </div>
+                    ${this.expandedTeams.has(team.id) ? `
+                        <div class="team-members">
+                            ${(team.members || []).length === 0 ? '<div class="team-member-item team-member-empty">No members yet</div>' : ''}
+                            ${(team.members || []).map(member => `
+                                <div class="team-member-item ${this.store.assigneeFilter === member ? 'active' : ''}" data-team-member="${team.id}::${member}">
+                                    <span class="team-member-name">${member}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
                 `).join('');
             }
         }
@@ -498,6 +516,44 @@ class App {
                     e.stopPropagation();
                     const teamId = btn.dataset.teamSettings;
                     this.showTeamSettings(teamId);
+                });
+            });
+
+            teamList.querySelectorAll('.team-toggle-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const teamId = btn.dataset.teamToggle;
+                    if (this.expandedTeams.has(teamId)) {
+                        this.expandedTeams.delete(teamId);
+                    } else {
+                        this.expandedTeams.add(teamId);
+                    }
+                    this.renderProjectSidebar();
+                });
+            });
+
+            teamList.querySelectorAll('.team-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const teamId = item.dataset.teamId;
+                    if (this.store.teamFilterId === teamId && !this.store.assigneeFilter) {
+                        this.store.clearTeamFilter();
+                    } else {
+                        this.store.setTeamFilter(teamId, null);
+                    }
+                });
+            });
+
+            teamList.querySelectorAll('.team-member-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const raw = item.dataset.teamMember;
+                    if (!raw) return;
+                    const [teamId, member] = raw.split('::');
+                    if (this.store.teamFilterId === teamId && this.store.assigneeFilter === member) {
+                        this.store.clearTeamFilter();
+                    } else {
+                        this.store.setTeamFilter(teamId, member);
+                    }
                 });
             });
         }
