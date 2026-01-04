@@ -80,6 +80,24 @@ function renderSettingsPane(app) {
             },
             { type: 'divider' },
             {
+                type: 'single-button',
+                text: app.store.filterMode === 'show' ? '👁 Show' : '🔍 Filter',
+                id: 'toggleFilterMode',
+                active: app.store.filterMode === 'filter'
+            },
+            { type: 'divider' },
+            {
+                type: 'group',
+                label: '',
+                items: [
+                    { type: 'button', text: 'To Do', filter: 'todo', active: app.store.selectedFilters.has('todo') },
+                    { type: 'button', text: 'In Progress', filter: 'in-progress', active: app.store.selectedFilters.has('in-progress') },
+                    { type: 'button', text: 'Review', filter: 'review', active: app.store.selectedFilters.has('review') },
+                    { type: 'button', text: 'Done', filter: 'done', active: app.store.selectedFilters.has('done') }
+                ]
+            },
+            { type: 'divider' },
+            {
                 type: 'parent-filter',
                 id: 'parentFilter'
             },
