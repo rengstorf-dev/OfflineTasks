@@ -177,6 +177,12 @@ function renderSettingsPane(app) {
                 id: 'toggleDescriptionsGantt',
                 active: app.store.showDescriptionsInGantt
             },
+            {
+                type: 'single-button',
+                text: app.store.showBarTextInGantt ? '🧾 Bar Text' : '🧾 Bar Text',
+                id: 'toggleGanttBarText',
+                active: app.store.showBarTextInGantt
+            },
             { type: 'divider' },
             {
                 type: 'single-button',
@@ -470,6 +476,12 @@ function renderSettingsPane(app) {
             } else if (item.id === 'toggleDescriptionsGantt') {
                 button.addEventListener('click', () => {
                     app.store.showDescriptionsInGantt = !app.store.showDescriptionsInGantt;
+                    button.classList.toggle('active');
+                    app.render();
+                });
+            } else if (item.id === 'toggleGanttBarText') {
+                button.addEventListener('click', () => {
+                    app.store.showBarTextInGantt = !app.store.showBarTextInGantt;
                     button.classList.toggle('active');
                     app.render();
                 });

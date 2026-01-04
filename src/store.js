@@ -53,6 +53,7 @@
                 this.showAssigneeInGantt = true;
                 this.showPriorityInGantt = true;
                 this.showDescriptionsInGantt = false;
+                this.showBarTextInGantt = true;
 
                 // Mind Map
                 this.showMindMapAssignee = true;

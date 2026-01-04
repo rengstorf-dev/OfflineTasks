@@ -332,7 +332,7 @@ function renderGanttView(app, container) {
                                             <div class="gantt-bar-cell" style="min-width: ${cellWidth}px">
                                                 ${idx === startCell ? `
                                                     <div class="gantt-bar" style="left: 2px; width: ${width}px; justify-content: center; text-align: center; background: ${barColor};" data-task-id="${task.id}">
-                                                        ${task.title}
+                                                        ${app.store.showBarTextInGantt ? task.title : ''}
                                                     </div>
                                                 ` : ''}
                                             </div>
