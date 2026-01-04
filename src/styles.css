@@ -108,6 +108,10 @@
             border-bottom-color: #3a3a3a;
         }
 
+        body.dark-mode .gantt-project-bar-row {
+            background: #2a2a2a;
+        }
+
         body.dark-mode .gantt-time-cell {
             border-right-color: #3a3a3a;
             color: #f2f2f2;
@@ -1399,18 +1403,25 @@
             overflow: auto;
             border: 1px solid #e5e7eb;
             border-radius: 6px;
+            min-height: 0;
         }
 
         .gantt-grid {
             display: grid;
-            grid-template-columns: 250px 6px 1fr;
+            grid-template-columns: 250px 6px max-content;
             min-width: 100%;
             align-items: start;
+            width: max-content;
         }
 
         .gantt-tasks {
             border-right: 1px solid #e5e7eb;
             grid-column: 1;
+            background: #f9fafb;
+            position: sticky;
+            left: 0;
+            z-index: 5;
+            overflow: hidden;
         }
 
         .gantt-resizer {
@@ -1422,7 +1433,9 @@
             align-self: stretch;
             height: 100%;
             position: relative;
-            z-index: 2;
+            z-index: 6;
+            position: sticky;
+            left: var(--gantt-task-pane-width);
         }
 
         .gantt-resizer:hover {
@@ -1432,15 +1445,17 @@
         .gantt-header {
             position: sticky;
             top: 0;
+            left: 0;
             background: #f9fafb;
             border-bottom: 2px solid #e5e7eb;
             padding: 12px;
             font-weight: 600;
-            z-index: 10;
+            z-index: 14;
             display: flex;
             align-items: center;
             height: 43px;
             box-sizing: border-box;
+            width: 100%;
         }
 
         .gantt-task-row {
@@ -1490,9 +1505,10 @@
         }
 
         .gantt-timeline {
-            overflow-x: auto;
+            overflow: visible;
             background: white;
             grid-column: 3;
+            min-width: 0;
         }
 
         .gantt-timeline-header {
@@ -1504,6 +1520,10 @@
             z-index: 10;
             height: 43px;
             box-sizing: border-box;
+        }
+
+        .gantt-project-bar-row {
+            background: #f9fafb;
         }
 
         .gantt-time-cell {
@@ -1572,7 +1592,7 @@
             display: grid;
             grid-template-columns: repeat(3, max-content);
             gap: 8px;
-            z-index: 10;
+            z-index: 9;
         }
 
         .mindmap-btn {

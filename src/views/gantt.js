@@ -120,26 +120,27 @@ function renderGanttView(app, container) {
             tasks.forEach(task => {
                 // Skip if task doesn't match filter
                 if (!matchesFilter(task)) return;
-
-                // Only show tasks that have dates
-                if (!task.metadata.startDate || !task.metadata.endDate) return;
-
-                const hasChildren = task.children && task.children.some(c =>
-                    c.metadata.startDate && c.metadata.endDate && matchesFilter(c)
-                );
+                const hasDate = !!(task.metadata.startDate && task.metadata.endDate);
                 const isCollapsed = app.store.ganttCollapsed.has(task.id);
+                const childRows = task.children ? renderTaskRows(task.children, depth + 1) : [];
+                const hasChildren = childRows.length > 0;
+
+                if (!hasDate && !hasChildren) {
+                    return;
+                }
 
                 rows.push({
                     type: 'task',
                     task,
                     depth,
                     hasChildren,
-                    isCollapsed
+                    isCollapsed,
+                    hasDate
                 });
 
                 // Recursively add children if not collapsed
                 if (hasChildren && !isCollapsed) {
-                    rows = rows.concat(renderTaskRows(task.children, depth + 1));
+                    rows = rows.concat(childRows);
                 }
             });
 
@@ -242,7 +243,11 @@ function renderGanttView(app, container) {
             }
         }
 
-        const taskPaneWidth = app.store.ganttTaskPaneWidth || 250;
+        const minTaskPaneWidth = 200;
+        const taskPaneWidth = Math.max(minTaskPaneWidth, app.store.ganttTaskPaneWidth || 250);
+        if (app.store.ganttTaskPaneWidth !== taskPaneWidth) {
+            app.store.ganttTaskPaneWidth = taskPaneWidth;
+        }
 
         container.innerHTML = `
             <div class="gantt-view">
@@ -253,7 +258,7 @@ function renderGanttView(app, container) {
                     <button class="gantt-zoom-btn ${zoomLevel === 'days' ? 'active' : ''}" data-zoom="days">Days</button>
                 </div>
                 <div class="gantt-container">
-                    <div class="gantt-grid" style="grid-template-columns: ${taskPaneWidth}px 6px 1fr;">
+                    <div class="gantt-grid" style="--gantt-task-pane-width: ${taskPaneWidth}px; grid-template-columns: var(--gantt-task-pane-width) 6px max-content;">
                         <div class="gantt-tasks">
                             <div class="gantt-header">Tasks</div>
                             ${taskRows.map(row => {
@@ -299,7 +304,7 @@ function renderGanttView(app, container) {
                                 if (row.type === 'project') {
                                     // Empty row for project header (no styling - left side has container)
                                     return `
-                                        <div class="gantt-bar-row">
+                                        <div class="gantt-bar-row gantt-project-bar-row">
                                             ${periods.map(p => `
                                                 <div class="gantt-bar-cell" style="min-width: ${cellWidth}px"></div>
                                             `).join('')}
@@ -308,6 +313,15 @@ function renderGanttView(app, container) {
                                 }
 
                                 const task = row.task;
+                                if (!row.hasDate) {
+                                    return `
+                                        <div class="gantt-bar-row">
+                                            ${periods.map(p => `
+                                                <div class="gantt-bar-cell" style="min-width: ${cellWidth}px"></div>
+                                            `).join('')}
+                                        </div>
+                                    `;
+                                }
                                 const taskStart = new Date(task.metadata.startDate);
                                 const taskEnd = new Date(task.metadata.endDate);
 
@@ -369,7 +383,7 @@ function renderGanttView(app, container) {
                 e.preventDefault();
                 const grid = container.querySelector('.gantt-grid');
                 const containerRect = container.querySelector('.gantt-container').getBoundingClientRect();
-                const minWidth = 200;
+                const minWidth = minTaskPaneWidth;
                 const maxWidth = Math.max(minWidth, Math.min(600, containerRect.width - 200));
                 document.body.style.cursor = 'col-resize';
                 document.body.style.userSelect = 'none';
@@ -377,7 +391,7 @@ function renderGanttView(app, container) {
                 const handleMove = (event) => {
                     const nextWidth = Math.max(minWidth, Math.min(maxWidth, event.clientX - containerRect.left));
                     app.store.ganttTaskPaneWidth = Math.round(nextWidth);
-                    grid.style.gridTemplateColumns = `${app.store.ganttTaskPaneWidth}px 6px 1fr`;
+                    grid.style.gridTemplateColumns = `${app.store.ganttTaskPaneWidth}px 6px max-content`;
                     syncRowHeights();
                 };
 
