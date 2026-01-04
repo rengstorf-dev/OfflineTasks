@@ -516,6 +516,24 @@
             color: #f2f2f2;
         }
 
+        .settings-checkbox-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .settings-checkbox-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: #374151;
+        }
+
+        body.dark-mode .settings-checkbox-item {
+            color: #e8e8e8;
+        }
+
         .settings-pane .divider {
             width: 1px;
             height: 24px;

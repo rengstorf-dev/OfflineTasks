@@ -764,15 +764,17 @@ class App {
                     </div>
 
                     <div class="settings-section">
-                        <h3>Team</h3>
-                        <div class="settings-placeholder">
-                            <p>Team management coming soon.</p>
-                            <p>You'll be able to:</p>
-                            <ul>
-                                <li>Add team members to this project</li>
-                                <li>Set default assignees</li>
-                                <li>Manage permissions</li>
-                            </ul>
+                        <h3>Teams</h3>
+                        <div class="settings-field">
+                            <div class="settings-checkbox-list">
+                                ${(this.store.teams || []).length === 0 ? '<div class="settings-info">No teams yet.</div>' : ''}
+                                ${(this.store.teams || []).map(team => `
+                                    <label class="settings-checkbox-item">
+                                        <input type="checkbox" data-team-id="${team.id}" ${project.teamIds?.includes(team.id) ? 'checked' : ''}>
+                                        <span>${team.name}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
                         </div>
                     </div>
 
@@ -887,6 +889,33 @@ class App {
                     });
                 }
                 this.store.notify();
+            });
+        });
+
+        // Team assignments
+        container.querySelectorAll('.settings-checkbox-item input[type="checkbox"]').forEach(input => {
+            input.addEventListener('change', () => {
+                const teamId = input.dataset.teamId;
+                if (!teamId) return;
+                const current = new Set(project.teamIds || []);
+                if (input.checked) {
+                    current.add(teamId);
+                } else {
+                    current.delete(teamId);
+                }
+                project.teamIds = [...current];
+                this.store.saveState();
+                if (this.store.apiClient) {
+                    this.store.apiClient.updateProject(projectId, {
+                        name: project.name,
+                        color: project.color,
+                        statusColors: project.statusColors,
+                        priorityColors: project.priorityColors,
+                        teamIds: project.teamIds
+                    }).catch((error) => {
+                        this.store.apiClient.reportError(error, 'Project update failed', { silent: true });
+                    });
+                }
             });
         });
 

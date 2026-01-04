@@ -92,7 +92,10 @@ const loadAppData = async (apiClient, store, settings) => {
         }
 
         store.tasks = tasks;
-        store.projects = projects;
+        store.projects = (projects || []).map((project) => ({
+            ...project,
+            teamIds: Array.isArray(project.teamIds) ? project.teamIds : []
+        }));
         store.relatedTasks = new Map();
         store.dependencies = new Map();
 

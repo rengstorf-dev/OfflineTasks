@@ -923,7 +923,8 @@
                     name,
                     color: this.getNextProjectColor(),
                     statusColors: this.getDefaultStatusColors(),
-                    priorityColors: this.getDefaultPriorityColors()
+                    priorityColors: this.getDefaultPriorityColors(),
+                    teamIds: []
                 };
                 this.projects.push(project);
                 this.saveState();
@@ -934,7 +935,8 @@
                         name: project.name,
                         color: project.color,
                         statusColors: project.statusColors,
-                        priorityColors: project.priorityColors
+                        priorityColors: project.priorityColors,
+                        teamIds: project.teamIds
                     }).catch((error) => {
                         this.apiClient.reportError(error, 'Project create failed');
                     });
@@ -950,6 +952,7 @@
                 if (updates.color !== undefined) project.color = updates.color;
                 if (updates.statusColors !== undefined) project.statusColors = updates.statusColors;
                 if (updates.priorityColors !== undefined) project.priorityColors = updates.priorityColors;
+                if (updates.teamIds !== undefined) project.teamIds = updates.teamIds;
 
                 this.saveState();
                 this.notify();
@@ -958,7 +961,8 @@
                         name: project.name,
                         color: project.color,
                         statusColors: project.statusColors,
-                        priorityColors: project.priorityColors
+                        priorityColors: project.priorityColors,
+                        teamIds: project.teamIds
                     }).catch((error) => {
                         this.apiClient.reportError(error, 'Project update failed');
                     });
