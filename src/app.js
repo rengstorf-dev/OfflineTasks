@@ -402,6 +402,18 @@ class App {
             item.addEventListener('click', (e) => {
                 if (e.target.classList.contains('project-settings-btn')) return;
 
+                if (this.currentProjectSettings) {
+                    if (projectId === 'all') {
+                        this.currentProjectSettings = null;
+                        this.selectProject(projectId);
+                        return;
+                    }
+                    if (projectId !== 'unassigned') {
+                        this.showProjectSettings(projectId);
+                        return;
+                    }
+                }
+
                 if ((e.ctrlKey || e.metaKey) && projectId !== 'all') {
                     // Ctrl+click: toggle multi-select
                     this.toggleProjectSelection(projectId);
