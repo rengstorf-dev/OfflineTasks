@@ -271,13 +271,13 @@ function renderGanttView(app, container) {
                                     return `
                                     <div class="gantt-task-row" data-task-id="${row.task.id}" style="${row.projectColor ? 'border-left: 4px solid ' + row.projectColor + ';' : ''}${row.parentContainerColor ? ' background: ' + row.parentContainerColor + '15;' : ''}">
                                         <div class="gantt-task-title" style="padding-left: ${row.depth * 20}px; display: flex; flex-direction: column; gap: 2px;">
-                                            <div style="display: flex; align-items: center; gap: 4px;">
+                                            <div class="gantt-task-title-row" style="display: flex; align-items: center; gap: 4px;">
                                                 ${row.hasChildren ?
                                                     `<button class="collapse-btn" data-gantt-collapse="${row.task.id}" style="margin-right: 4px;">${row.isCollapsed ? '▶' : '▼'}</button>` :
                                                     '<span style="display: inline-block; width: 24px;"></span>'
                                                 }
                                                 ${app.store.showPriorityInGantt && row.task.metadata.priority === 'high' ? `<span class="priority-indicator" title="High Priority" style="color: ${app.store.getTaskColors(row.task.id).priorityColors.high};">⚠️</span>` : ''}
-                                                <span>${row.task.title}</span>
+                                                <span class="gantt-task-name">${row.task.title}</span>
                                                 ${app.store.showAssigneeInGantt && row.task.metadata.assignee ? `<span class="assignee" style="margin-left: 8px;">${row.task.metadata.assignee}</span>` : ''}
                                                 ${app.store.getRelatedTasks(row.task.id).length > 0 ? `<span class="related-badge" data-filter-related="${row.task.id}" title="Click to filter by related tasks">⟷ ${app.store.getRelatedTasks(row.task.id).length}</span>` : ''}
                                             </div>
@@ -345,6 +345,19 @@ function renderGanttView(app, container) {
                 </div>
             </div>
         `;
+
+        const syncRowHeights = () => {
+            const taskRows = [
+                ...container.querySelectorAll('.gantt-tasks > .gantt-project-row, .gantt-tasks > .gantt-task-row')
+            ];
+            const barRows = [...container.querySelectorAll('.gantt-timeline .gantt-bar-row')];
+            const count = Math.min(taskRows.length, barRows.length);
+            for (let i = 0; i < count; i++) {
+                const height = taskRows[i].offsetHeight;
+                barRows[i].style.height = `${height}px`;
+            }
+        };
+        requestAnimationFrame(syncRowHeights);
 
         // Collapse/expand buttons for tasks
         container.querySelectorAll('[data-gantt-collapse]').forEach(btn => {
