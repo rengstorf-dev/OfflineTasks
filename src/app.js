@@ -461,13 +461,15 @@ class App {
             item.addEventListener('click', (e) => {
                 if (e.target.classList.contains('project-settings-btn')) return;
 
-                if (this.currentProjectSettings) {
+                if (this.currentProjectSettings || this.currentTeamSettings) {
                     if (projectId === 'all') {
                         this.currentProjectSettings = null;
+                        this.currentTeamSettings = null;
                         this.selectProject(projectId);
                         return;
                     }
                     if (projectId !== 'unassigned') {
+                        this.currentTeamSettings = null;
                         this.showProjectSettings(projectId);
                         return;
                     }
@@ -544,6 +546,11 @@ class App {
             teamList.querySelectorAll('.team-item').forEach(item => {
                 item.addEventListener('click', () => {
                     const teamId = item.dataset.teamId;
+                    if (this.currentProjectSettings || this.currentTeamSettings) {
+                        this.currentProjectSettings = null;
+                        this.showTeamSettings(teamId);
+                        return;
+                    }
                     if (this.store.teamFilterId === teamId && !this.store.assigneeFilter) {
                         this.store.clearTeamFilter();
                     } else {
