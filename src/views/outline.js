@@ -848,6 +848,12 @@ function renderOutlineView(app, container) {
                     const siblings = parent ? parent.children : app.store.tasks;
                     const currentIndex = siblings.findIndex(t => t.id === taskId);
 
+                    const taskProject = app.store.getTaskProject(taskId);
+                    const projectForAssignee = taskProject ? taskProject.id : null;
+                    const defaultAssignee = app.getProjectDefaultAssignee && projectForAssignee
+                        ? app.getProjectDefaultAssignee(projectForAssignee)
+                        : '';
+
                     // Create new task object
                     const newTask = {
                         id: app.store.generateId(),
@@ -857,7 +863,7 @@ function renderOutlineView(app, container) {
                         metadata: {
                             status: 'todo',
                             priority: 'medium',
-                            assignee: '',
+                            assignee: defaultAssignee,
                             startDate: '',
                             endDate: ''
                         },

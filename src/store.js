@@ -170,7 +170,7 @@
                 this.observers.forEach(callback => callback());
             }
 
-            addTask(parentId, title, description = '', projectId = null) {
+            addTask(parentId, title, description = '', projectId = null, assignee = '') {
                 const newTask = {
                     id: this.generateId(),
                     title,
@@ -178,7 +178,7 @@
                     metadata: {
                         status: 'todo',
                         priority: 'medium',
-                        assignee: '',
+                        assignee: assignee || '',
                         startDate: '',
                         endDate: ''
                     },

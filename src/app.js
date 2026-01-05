@@ -220,6 +220,11 @@ class App {
             const title = document.getElementById('newTaskTitle').value.trim();
             const parent = document.getElementById('newTaskParent').value;
             const description = document.getElementById('newTaskDescription').value.trim();
+            const assigneeSelect = document.getElementById('newTaskAssignee');
+            let assignee = assigneeSelect?.value || '';
+            if (!assignee) {
+                assignee = assigneeSelect?.dataset.defaultAssignee || '';
+            }
 
             if (title) {
                 // Auto-assign to selected project for root-level tasks
@@ -228,7 +233,7 @@ class App {
                     this.store.selectedProjectId && this.store.selectedProjectId !== 'unassigned') {
                     projectId = this.store.selectedProjectId;
                 }
-                this.store.addTask(parent || null, title, description, projectId);
+                this.store.addTask(parent || null, title, description, projectId, assignee);
                 this.closeAddTaskModal();
             } else {
                 alert('Please enter a task title');
@@ -1289,6 +1294,41 @@ class App {
         });
     }
 
+    getProjectTeamMembers(projectId) {
+        if (!projectId) return [];
+        const project = this.store.getProject(projectId);
+        if (!project || !Array.isArray(project.teamIds) || project.teamIds.length === 0) {
+            return [];
+        }
+        const members = [];
+        project.teamIds.forEach(teamId => {
+            const team = (this.store.teams || []).find(t => t.id === teamId);
+            if (!team || !Array.isArray(team.members)) return;
+            team.members.forEach(member => {
+                const name = (member || '').trim();
+                if (name) members.push(name);
+            });
+        });
+        return Array.from(new Set(members));
+    }
+
+    getProjectDefaultAssignee(projectId) {
+        if (!projectId) return '';
+        const project = this.store.getProject(projectId);
+        if (!project || !Array.isArray(project.teamIds)) return '';
+        const defaults = new Set();
+        project.teamIds.forEach(teamId => {
+            const team = (this.store.teams || []).find(t => t.id === teamId);
+            if (team && team.defaultMember) {
+                defaults.add(team.defaultMember);
+            }
+        });
+        if (defaults.size === 1) {
+            return [...defaults][0];
+        }
+        return '';
+    }
+
     showDetailPanel(taskId) {
         const task = this.store.findTask(taskId);
         if (!task) return;
@@ -1304,6 +1344,15 @@ class App {
         const isParentTask = this.store.tasks.some(t => t.id === taskId);
         const projects = this.store.getProjects();
         const taskProject = this.store.getTaskProject(taskId);
+        const assigneeProjectId = taskProject ? taskProject.id : (task.projectId || null);
+        const teamMembers = this.getProjectTeamMembers(assigneeProjectId);
+        const assigneeValue = task.metadata.assignee || '';
+        const assigneeOptions = teamMembers.map(member => {
+            const selected = member === assigneeValue ? 'selected' : '';
+            return `<option value="${member}" ${selected}>${member}</option>`;
+        }).join('');
+        const includeCurrent = assigneeValue && !teamMembers.includes(assigneeValue);
+        const currentOption = includeCurrent ? `<option value="${assigneeValue}" selected>${assigneeValue}</option>` : '';
 
         // Build project dropdown HTML (only for parent tasks)
         const projectDropdownHtml = isParentTask ? `
@@ -1368,7 +1417,11 @@ class App {
 
             <div class="detail-field">
                 <div class="detail-label">Assignee</div>
-                <input type="text" class="detail-input" id="taskAssignee" value="${task.metadata.assignee || ''}">
+                <select class="detail-select" id="taskAssignee">
+                    <option value="">Unassigned</option>
+                    ${currentOption}
+                    ${assigneeOptions}
+                </select>
             </div>
 
             <div class="detail-field">
@@ -1445,7 +1498,7 @@ class App {
         panel.querySelector('#taskDescription').addEventListener('input', autosave);
         panel.querySelector('#taskStatus').addEventListener('change', autosave);
         panel.querySelector('#taskPriority').addEventListener('change', autosave);
-        panel.querySelector('#taskAssignee').addEventListener('input', autosave);
+        panel.querySelector('#taskAssignee').addEventListener('change', autosave);
         panel.querySelector('#taskStartDate').addEventListener('change', autosave);
         panel.querySelector('#taskEndDate').addEventListener('change', autosave);
         const containerEnabled = panel.querySelector('#taskContainerEnabled');

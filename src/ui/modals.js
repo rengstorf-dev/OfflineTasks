@@ -1,6 +1,29 @@
 function showAddTaskModal(app, parentId = '') {
     const select = document.getElementById('newTaskParent');
     select.innerHTML = '<option value="">None (Top Level)</option>';
+    const assigneeSelect = document.getElementById('newTaskAssignee');
+    const renderAssigneeOptions = () => {
+        if (!assigneeSelect) return;
+        let projectId = null;
+        if (select.value) {
+            const project = app.store.getTaskProject(select.value);
+            projectId = project ? project.id : null;
+        } else if (app.store.projectViewMode === 'project' &&
+            app.store.selectedProjectId && app.store.selectedProjectId !== 'unassigned') {
+            projectId = app.store.selectedProjectId;
+        }
+        const members = app.getProjectTeamMembers ? app.getProjectTeamMembers(projectId) : [];
+        const defaultAssignee = app.getProjectDefaultAssignee ? app.getProjectDefaultAssignee(projectId) : '';
+        assigneeSelect.innerHTML = '<option value="">Unassigned</option>';
+        members.forEach(member => {
+            assigneeSelect.innerHTML += `<option value="${member}">${member}</option>`;
+        });
+        assigneeSelect.disabled = members.length === 0;
+        assigneeSelect.dataset.defaultAssignee = defaultAssignee || '';
+        if (!assigneeSelect.value && defaultAssignee) {
+            assigneeSelect.value = defaultAssignee;
+        }
+    };
 
     const addOptions = (tasks, prefix = '') => {
         tasks.forEach(task => {
@@ -15,12 +38,16 @@ function showAddTaskModal(app, parentId = '') {
 
     document.getElementById('newTaskTitle').value = '';
     document.getElementById('newTaskDescription').value = '';
+    if (assigneeSelect) assigneeSelect.value = '';
 
     if (parentId && select.querySelector(`option[value="${parentId}"]`)) {
         select.value = parentId;
     } else {
         select.value = '';
     }
+
+    renderAssigneeOptions();
+    select.onchange = renderAssigneeOptions;
 
     document.getElementById('addTaskModal').classList.add('visible');
     setTimeout(() => {
