@@ -936,6 +936,16 @@ async function importDataToApi(app, importedData) {
 
     const importedSettings = importedData.settings || null;
     if (importedSettings) {
+        if (importedSettings.projectTeams) {
+            const remappedTeams = {};
+            Object.entries(importedSettings.projectTeams).forEach(([oldProjectId, teamIds]) => {
+                const newProjectId = projectIdMap.get(oldProjectId);
+                if (newProjectId) {
+                    remappedTeams[newProjectId] = teamIds;
+                }
+            });
+            importedSettings.projectTeams = remappedTeams;
+        }
         await wrapStep('save settings', () => apiClient.setSetting('taskManagerSettings', importedSettings));
     }
 
