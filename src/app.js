@@ -82,6 +82,15 @@ class App {
             this.store.nextTeamId = savedTeams.length + 1;
         }
 
+        const savedProjectTeams = this.settings.get('projectTeams');
+        if (savedProjectTeams && typeof savedProjectTeams === 'object') {
+            this.store.projects.forEach(project => {
+                if (savedProjectTeams[project.id]) {
+                    project.teamIds = savedProjectTeams[project.id];
+                }
+            });
+        }
+
         this.store.subscribe(() => this.render());
         this.setupEventListeners();
         this.initApiStatus();
@@ -904,6 +913,11 @@ class App {
                     current.delete(teamId);
                 }
                 project.teamIds = [...current];
+                const projectTeams = this.store.projects.reduce((acc, item) => {
+                    acc[item.id] = item.teamIds || [];
+                    return acc;
+                }, {});
+                this.settings.set('projectTeams', projectTeams);
                 this.store.saveState();
                 if (this.store.apiClient) {
                     this.store.apiClient.updateProject(projectId, {

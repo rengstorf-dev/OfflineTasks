@@ -27,6 +27,7 @@
                         requireTests: true
                     },
                     teams: [],
+                    projectTeams: {},
 
                     // View-specific settings
                     outline: {

@@ -64,21 +64,76 @@ function renderKanbanView(app, container) {
 
         const leafTasks = getFlatLeafTasks(filteredTasks);
 
+        let groupedColumns = null;
         if (fieldName === 'assignee') {
-            const assignees = Array.from(new Set(
-                leafTasks
-                    .map(task => (task.metadata.assignee || '').trim())
-                    .filter(name => name)
-            )).sort((a, b) => a.localeCompare(b));
             const hasUnassigned = leafTasks.some(task => !(task.metadata.assignee || '').trim());
-            columns = hasUnassigned ? ['__unassigned__', ...assignees] : assignees;
+            const teams = app.store.teams || [];
+
+            const resolveAssignedTeamIds = () => {
+                if (app.store.projectViewMode === 'project' && app.store.selectedProjectId && app.store.selectedProjectId !== 'unassigned') {
+                    const selectedProject = app.store.getProject(app.store.selectedProjectId);
+                    return selectedProject?.teamIds || [];
+                }
+                if (app.store.projectViewMode === 'multi' && app.store.selectedProjectIds.size === 1) {
+                    const [onlyId] = [...app.store.selectedProjectIds];
+                    const selectedProject = app.store.getProject(onlyId);
+                    return selectedProject?.teamIds || [];
+                }
+                const projectIds = new Set();
+                leafTasks.forEach(task => {
+                    const rootParent = getRootParent(task.id);
+                    const projectId = rootParent?.projectId || task.projectId;
+                    if (projectId) {
+                        projectIds.add(projectId);
+                    }
+                });
+                const teamIds = [];
+                app.store.projects.forEach(project => {
+                    if (projectIds.has(project.id)) {
+                        (project.teamIds || []).forEach(id => teamIds.push(id));
+                    }
+                });
+                return teamIds;
+            };
+
+            const assignedTeamIds = resolveAssignedTeamIds();
             columnNames = {};
-            if (hasUnassigned) {
-                columnNames['__unassigned__'] = 'Unassigned';
+
+            if (assignedTeamIds.length > 0) {
+                groupedColumns = [];
+                if (hasUnassigned) {
+                    groupedColumns.push({ label: 'Unassigned', columns: ['__unassigned__'] });
+                    columnNames['__unassigned__'] = 'Unassigned';
+                }
+
+                assignedTeamIds.forEach(teamId => {
+                    const team = teams.find(t => t.id === teamId);
+                    if (!team) return;
+                    const members = (team.members || []).filter(name => name);
+                    if (members.length === 0) {
+                        return;
+                    }
+                    members.forEach(name => {
+                        columnNames[name] = name;
+                    });
+                    groupedColumns.push({ label: team.name, columns: members });
+                });
+
+                columns = groupedColumns.flatMap(group => group.columns);
+            } else {
+                const assignees = Array.from(new Set(
+                    leafTasks
+                        .map(task => (task.metadata.assignee || '').trim())
+                        .filter(name => name)
+                )).sort((a, b) => a.localeCompare(b));
+                columns = hasUnassigned ? ['__unassigned__', ...assignees] : assignees;
+                if (hasUnassigned) {
+                    columnNames['__unassigned__'] = 'Unassigned';
+                }
+                assignees.forEach(name => {
+                    columnNames[name] = name;
+                });
             }
-            assignees.forEach(name => {
-                columnNames[name] = name;
-            });
         }
 
         // Helper to get breadcrumb path
@@ -110,7 +165,7 @@ function renderKanbanView(app, container) {
             return root;
         };
 
-        const columnsHtml = columns.map(columnValue => {
+        const renderColumn = (columnValue) => {
             let tasks = leafTasks.filter(t => {
                 if (fieldName === 'assignee') {
                     const assignee = (t.metadata.assignee || '').trim();
@@ -199,9 +254,26 @@ function renderKanbanView(app, container) {
                     </div>
                 </div>
             `;
-        }).join('');
+        };
 
-        container.innerHTML = `<div class="kanban-view">${columnsHtml}</div>`;
+        const isGrouped = !!groupedColumns;
+        const columnsHtml = groupedColumns
+            ? (() => {
+                const totalColumns = groupedColumns.reduce((sum, group) => sum + group.columns.length, 0);
+                const labels = groupedColumns.map(group => `
+                    <div class="kanban-group-label" style="grid-column: span ${group.columns.length};">${group.label}</div>
+                `).join('');
+                const groupedCols = groupedColumns.flatMap(group => group.columns).map(renderColumn).join('');
+                return `
+                    <div class="kanban-columns-row kanban-columns-row-grouped" style="grid-template-columns: repeat(${totalColumns}, 280px);">
+                        ${labels}
+                        ${groupedCols}
+                    </div>
+                `;
+            })()
+            : `<div class="kanban-columns-row">${columns.map(renderColumn).join('')}</div>`;
+
+        container.innerHTML = `<div class="kanban-view${isGrouped ? ' kanban-scroll' : ''}">${columnsHtml}</div>`;
 
         container.querySelectorAll('.kanban-header').forEach(header => {
             header.addEventListener('click', () => {
