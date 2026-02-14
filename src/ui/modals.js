@@ -168,10 +168,10 @@ function populateSettingsModal(app) {
         providerKeyStatus.textContent = formatProviderStatus(selectedProvider, getProviderStatus(selectedProvider));
     }
     if (providerKeyBadge) {
-        providerKeyBadge.textContent = ApiKeyUtils.formatProviderBadge(getProviderStatus(selectedProvider));
+        providerKeyBadge.textContent = getApiKeyUtilsSafe().formatProviderBadge(getProviderStatus(selectedProvider));
     }
     if (providerKeyLastValidated) {
-        providerKeyLastValidated.textContent = ApiKeyUtils.formatLastValidated(getProviderLastValidated(selectedProvider));
+        providerKeyLastValidated.textContent = getApiKeyUtilsSafe().formatLastValidated(getProviderLastValidated(selectedProvider));
     }
     updateApiKeyButtons();
 }
@@ -325,6 +325,20 @@ function bindApiKeyHandlers(app) {
     }
 }
 
+function getApiKeyUtilsSafe() {
+    const utils = (typeof globalThis !== 'undefined' && globalThis.ApiKeyUtils)
+        ? globalThis.ApiKeyUtils
+        : null;
+    if (utils) {
+        return utils;
+    }
+    return {
+        validateProviderKey: () => ({ isValid: true, message: '' }),
+        formatProviderBadge: (status) => status || '',
+        formatLastValidated: () => 'Never'
+    };
+}
+
 function updateApiKeyButtons() {
     const providerKeyInput = document.getElementById('setting-providerKey');
     const validateBtn = document.getElementById('validateProviderKey');
@@ -334,7 +348,10 @@ function updateApiKeyButtons() {
     const providerKeyOverride = document.getElementById('setting-providerKeyOverride');
     const hasKey = providerKeyInput && providerKeyInput.value.trim().length > 0;
     const provider = getCurrentProvider();
-    const validation = ApiKeyUtils.validateProviderKey(provider, providerKeyInput ? providerKeyInput.value.trim() : '');
+    const validation = getApiKeyUtilsSafe().validateProviderKey(
+        provider,
+        providerKeyInput ? providerKeyInput.value.trim() : ''
+    );
     updateProviderKeyWarning(validation);
     const allowInvalid = providerKeyOverride && providerKeyOverride.checked;
     const hasStoredKey = providerHasStoredKey(provider);
@@ -525,7 +542,7 @@ function setProviderStatus(provider, status) {
             providerKeyStatus.textContent = formatProviderStatus(provider, status);
         }
         if (providerKeyBadge) {
-            providerKeyBadge.textContent = ApiKeyUtils.formatProviderBadge(status);
+            providerKeyBadge.textContent = getApiKeyUtilsSafe().formatProviderBadge(status);
         }
     }
 }
@@ -535,7 +552,7 @@ function setProviderLastValidated(provider, value) {
     if (isCurrentProvider(provider)) {
         const providerKeyLastValidated = document.getElementById('setting-providerKeyLastValidated');
         if (providerKeyLastValidated) {
-            providerKeyLastValidated.textContent = ApiKeyUtils.formatLastValidated(value);
+            providerKeyLastValidated.textContent = getApiKeyUtilsSafe().formatLastValidated(value);
         }
     }
 }
