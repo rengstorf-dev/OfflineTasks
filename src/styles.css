@@ -238,6 +238,15 @@
             border-color: #1e293b;
         }
 
+        body.dark-mode .docs-collapse-btn {
+            color: #93c5fd;
+        }
+
+        body.dark-mode .docs-collapse-btn:hover {
+            background: #1f2937;
+            color: #dbeafe;
+        }
+
         body.dark-mode .docs-save-btn {
             background: #1d4ed8;
             border-color: #1d4ed8;
@@ -2261,6 +2270,49 @@
         .docs-preview h2 { font-size: 22px; }
         .docs-preview h3 { font-size: 18px; }
         .docs-preview h4 { font-size: 16px; }
+
+        .docs-collapsible-heading {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .docs-preview .docs-heading-level-2 { margin-left: 0; }
+        .docs-preview .docs-heading-level-3 { margin-left: 20px; }
+        .docs-preview .docs-heading-level-4 { margin-left: 40px; }
+        .docs-preview .docs-heading-level-5 { margin-left: 60px; }
+        .docs-preview .docs-heading-level-6 { margin-left: 80px; }
+
+        .docs-collapse-btn {
+            border: none;
+            background: transparent;
+            color: #1d4ed8;
+            cursor: pointer;
+            font-size: 12px;
+            line-height: 1;
+            border-radius: 4px;
+            padding: 2px 4px;
+            width: 20px;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .docs-collapse-btn:hover {
+            background: #e2e8f0;
+            color: #1e40af;
+        }
+
+        .docs-heading-text {
+            min-width: 0;
+        }
+
+        .docs-section-content {
+            margin-left: 0;
+        }
+
+        .docs-collapsed-content {
+            display: none;
+        }
 
         .docs-preview p {
             margin: 10px 0;

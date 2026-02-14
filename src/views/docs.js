@@ -315,6 +315,12 @@ function renderDocsView(app, container) {
     const contextKey = projectContexts.map((ctx) => ctx.project.id).join(',');
     const draft = app.docsDraft && app.docsDraft.key === contextKey ? app.docsDraft : null;
     const initialText = draft && draft.dirty ? draft.text : combinedMarkdown;
+    if (!app.docsCollapsedByContext || typeof app.docsCollapsedByContext !== 'object') {
+        app.docsCollapsedByContext = {};
+    }
+    if (!app.docsCollapsedByContext[contextKey]) {
+        app.docsCollapsedByContext[contextKey] = new Set();
+    }
 
     const validModes = new Set(['edit', 'preview', 'split']);
     const settingMode = app.settings && typeof app.settings.get === 'function'
@@ -363,8 +369,83 @@ function renderDocsView(app, container) {
         };
     };
 
+    const getHeadingLevel = (element) => {
+        if (!element || !element.tagName) return null;
+        const tag = element.tagName.toUpperCase();
+        if (!/^H[1-6]$/.test(tag)) return null;
+        return Number(tag.slice(1));
+    };
+
+    const getHeadingSectionNodes = (heading) => {
+        const nodes = [];
+        const level = getHeadingLevel(heading);
+        let current = heading.nextElementSibling;
+        while (current) {
+            const nextLevel = getHeadingLevel(current);
+            if (nextLevel !== null && nextLevel <= level) {
+                break;
+            }
+            nodes.push(current);
+            current = current.nextElementSibling;
+        }
+        return nodes;
+    };
+
+    const applyHeadingCollapseControls = () => {
+        const collapsedSet = app.docsCollapsedByContext[contextKey];
+        const headings = Array.from(preview.querySelectorAll('h2, h3, h4, h5, h6'));
+        headings.forEach((heading, index) => {
+            const level = getHeadingLevel(heading);
+            if (level === null || level < 2) return;
+
+            const rawTitle = heading.textContent.trim();
+            const key = `${level}:${index}:${rawTitle}`;
+            const contentHtml = heading.innerHTML;
+            const sectionNodes = getHeadingSectionNodes(heading);
+            const contentIndentPx = Math.max(0, (level - 2) * 20);
+
+            heading.classList.add('docs-collapsible-heading');
+            heading.classList.add(`docs-heading-level-${level}`);
+            heading.innerHTML = '';
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'docs-collapse-btn';
+
+            const label = document.createElement('span');
+            label.className = 'docs-heading-text';
+            label.innerHTML = contentHtml;
+
+            const applyState = () => {
+                const collapsed = collapsedSet.has(key);
+                btn.textContent = collapsed ? '▶' : '▼';
+                btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+                sectionNodes.forEach((node) => {
+                    node.classList.toggle('docs-collapsed-content', collapsed);
+                    if (getHeadingLevel(node) === null) {
+                        node.classList.add('docs-section-content');
+                        node.style.marginLeft = `${contentIndentPx}px`;
+                    }
+                });
+            };
+
+            btn.addEventListener('click', () => {
+                if (collapsedSet.has(key)) {
+                    collapsedSet.delete(key);
+                } else {
+                    collapsedSet.add(key);
+                }
+                applyState();
+            });
+
+            heading.append(btn, label);
+            applyState();
+        });
+    };
+
     const updatePreview = () => {
         preview.innerHTML = renderMarkdown(editor.value);
+        applyHeadingCollapseControls();
     };
 
     const applyMode = (mode) => {
