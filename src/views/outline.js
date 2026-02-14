@@ -87,6 +87,7 @@ function renderOutlineView(app, container) {
                 id: task.id,
                 title: task.title || '',
                 description: task.description || '',
+                notes: task.notes || '',
                 parentId: parentId || null,
                 projectId: parentId ? null : (task.projectId || null),
                 metadata: task.metadata || {},
@@ -860,6 +861,7 @@ function renderOutlineView(app, container) {
                         _pendingCreate: true,
                         title: 'New Task',
                         description: '',
+                        notes: '',
                         metadata: {
                             status: 'todo',
                             priority: 'medium',

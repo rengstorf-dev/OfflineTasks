@@ -121,6 +121,10 @@ function populateSettingsModal(app) {
     document.getElementById('setting-autoSave').checked = app.settings.get('autoSave');
     document.getElementById('setting-disableTooltips').checked = app.settings.get('disableTooltips');
     document.getElementById('setting-defaultView').value = app.settings.get('defaultView');
+    const docsPreviewInteraction = document.getElementById('setting-docsPreviewInteraction');
+    if (docsPreviewInteraction) {
+        docsPreviewInteraction.value = app.settings.get('docs.previewInteraction') || 'standard';
+    }
     const telemetryToggle = document.getElementById('setting-telemetryEnabled');
     if (telemetryToggle) {
         telemetryToggle.checked = app.settings.get('telemetry.enabled');
@@ -178,6 +182,10 @@ function saveSettingsModal(app) {
     app.settings.set('autoSave', document.getElementById('setting-autoSave').checked);
     app.settings.set('disableTooltips', document.getElementById('setting-disableTooltips').checked);
     app.settings.set('defaultView', document.getElementById('setting-defaultView').value);
+    const docsPreviewInteraction = document.getElementById('setting-docsPreviewInteraction');
+    if (docsPreviewInteraction) {
+        app.settings.set('docs.previewInteraction', docsPreviewInteraction.value || 'standard');
+    }
     const telemetryToggle = document.getElementById('setting-telemetryEnabled');
     if (telemetryToggle) {
         app.settings.set('telemetry.enabled', telemetryToggle.checked);
@@ -188,6 +196,7 @@ function saveSettingsModal(app) {
     }
 
     app.applyTooltipSetting();
+    app.render();
 
     showToast('Settings saved');
     closeSettingsModal();
@@ -848,7 +857,7 @@ async function exportDataFromApi(app) {
     });
 
     const exportPayload = {
-        version: '1.4',
+        version: '1.5',
         exportDate: new Date().toISOString(),
         tasks: tasks,
         projects: projects,
@@ -975,6 +984,7 @@ async function importDataToApi(app, importedData) {
                 id: newId,
                 title: task.title || '',
                 description: task.description || '',
+                notes: task.notes || '',
                 parentId: parentId,
                 projectId: mappedProjectId,
                 metadata: {

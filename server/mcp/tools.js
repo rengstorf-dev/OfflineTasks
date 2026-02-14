@@ -100,6 +100,7 @@ const tools = [
             properties: {
               title: { type: 'string' },
               description: { type: 'string' },
+              notes: { type: 'string' },
               status: { type: 'string', enum: STATUSES },
               priority: { type: 'string', enum: PRIORITIES },
               assignee: { type: 'string' },
@@ -173,6 +174,7 @@ const tools = [
         taskId: { type: 'string' },
         title: { type: 'string' },
         description: { type: 'string' },
+        notes: { type: 'string' },
         projectId: { type: ['string', 'null'] },
         parentId: { type: ['string', 'null'] },
         sortIndex: { type: 'integer' },
@@ -193,6 +195,7 @@ const normalizeTask = (task) => ({
   id: task.id,
   title: task.title,
   description: task.description,
+  notes: task.notes || '',
   projectId: task.projectId ?? task.project_id ?? null,
   parentId: task.parentId ?? task.parent_id ?? null,
   sortIndex: task.sortIndex ?? task.sort_index ?? 0,
@@ -235,6 +238,7 @@ const handlers = {
       const payload = {
         title: task.title,
         description: task.description,
+        notes: task.notes,
         projectId: task.projectId ?? args.projectId ?? null,
         parentId: task.parentId ?? null,
         sortIndex: task.sortIndex,
@@ -322,6 +326,7 @@ const handlers = {
     const payload = {
       title: args.title,
       description: args.description,
+      notes: args.notes,
       projectId: args.projectId,
       parentId: args.parentId,
       sortIndex: args.sortIndex,

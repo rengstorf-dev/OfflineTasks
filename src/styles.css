@@ -224,6 +224,17 @@
             border-left-color: #3a3a3a;
         }
 
+        body.dark-mode .docs-preview.docs-preview-editable {
+            background: #111827;
+            outline: 1px solid #1e40af;
+            outline-offset: -1px;
+        }
+
+        body.dark-mode .docs-preview.docs-preview-editable:focus {
+            outline: 2px solid #3b82f6;
+            outline-offset: -2px;
+        }
+
         body.dark-mode .docs-preview a {
             color: #93c5fd;
         }
@@ -2254,6 +2265,18 @@
             background: #ffffff;
             font-size: 14px;
             line-height: 1.6;
+        }
+
+        .docs-preview.docs-preview-editable {
+            cursor: text;
+            background: #f8fbff;
+            outline: 1px solid #bfdbfe;
+            outline-offset: -1px;
+        }
+
+        .docs-preview.docs-preview-editable:focus {
+            outline: 2px solid #93c5fd;
+            outline-offset: -2px;
         }
 
         .docs-preview h1,

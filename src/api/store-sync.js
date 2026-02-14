@@ -29,6 +29,17 @@ const buildSyncFingerprint = (projects, tasks, related, dependencies) => {
     }
 };
 
+const normalizeTaskTree = (tasks) => {
+    if (!Array.isArray(tasks)) {
+        return [];
+    }
+    return tasks.map((task) => ({
+        ...task,
+        notes: typeof task?.notes === 'string' ? task.notes : '',
+        children: normalizeTaskTree(task?.children || [])
+    }));
+};
+
 const loadAppData = async (apiClient, store, settings) => {
     if (!apiClient) {
         return;
@@ -54,6 +65,7 @@ const loadAppData = async (apiClient, store, settings) => {
             apiClient.getRelated().catch(() => []),
             apiClient.getDependencies().catch(() => [])
         ]);
+        const normalizedTasks = normalizeTaskTree(tasks || []);
 
         const previousContainerColors = new Map();
         const collectContainerColors = (list) => {
@@ -84,14 +96,14 @@ const loadAppData = async (apiClient, store, settings) => {
                 }
             });
         };
-        applyContainerColors(tasks || []);
+        applyContainerColors(normalizedTasks);
 
-        const fingerprint = buildSyncFingerprint(projects, tasks, related, dependencies);
+        const fingerprint = buildSyncFingerprint(projects, normalizedTasks, related, dependencies);
         if (fingerprint && store._lastSyncFingerprint === fingerprint) {
             return;
         }
 
-        store.tasks = tasks;
+        store.tasks = normalizedTasks;
         const projectTeams = settings?.get ? settings.get('projectTeams') : null;
         store.projects = (projects || []).map((project) => {
             const fallbackTeams = projectTeams && projectTeams[project.id] ? projectTeams[project.id] : [];
@@ -132,7 +144,7 @@ const loadAppData = async (apiClient, store, settings) => {
         });
 
         const projectIds = new Set(projects.map((project) => project.id));
-        const hasUnassigned = tasks.some((task) => !task.projectId);
+        const hasUnassigned = normalizedTasks.some((task) => !task.projectId);
 
         if (store.projectViewMode === 'project') {
             const selected = store.selectedProjectId;

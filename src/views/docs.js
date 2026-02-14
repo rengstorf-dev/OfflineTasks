@@ -158,6 +158,120 @@ function renderDocsView(app, container) {
         return html.join('\n');
     };
 
+    const normalizeInlineText = (value) => (value || '').replace(/\u00a0/g, ' ');
+
+    const serializeInlineNodes = (nodes) => {
+        const serializeInlineNode = (node) => {
+            if (!node) return '';
+            if (node.nodeType === Node.TEXT_NODE) {
+                return normalizeInlineText(node.textContent || '');
+            }
+            if (node.nodeType !== Node.ELEMENT_NODE) {
+                return '';
+            }
+
+            const tag = node.tagName.toUpperCase();
+            if (tag === 'BR') return '\n';
+            if (tag === 'STRONG' || tag === 'B') {
+                return `**${serializeInlineNodes(Array.from(node.childNodes))}**`;
+            }
+            if (tag === 'EM' || tag === 'I') {
+                return `*${serializeInlineNodes(Array.from(node.childNodes))}*`;
+            }
+            if (tag === 'CODE' && node.parentElement && node.parentElement.tagName.toUpperCase() !== 'PRE') {
+                return `\`${normalizeInlineText(node.textContent || '')}\``;
+            }
+            if (tag === 'A') {
+                const href = node.getAttribute('href') || '';
+                const label = serializeInlineNodes(Array.from(node.childNodes)).trim() || normalizeInlineText(node.textContent || '').trim();
+                if (!href) return label;
+                return `[${label}](${href})`;
+            }
+
+            return serializeInlineNodes(Array.from(node.childNodes));
+        };
+
+        return nodes.map(serializeInlineNode).join('');
+    };
+
+    const serializePreviewToMarkdown = (previewEl) => {
+        const serializeBlockNode = (node) => {
+            if (!node) return [];
+
+            if (node.nodeType === Node.TEXT_NODE) {
+                const text = normalizeInlineText(node.textContent || '').trim();
+                return text ? [text] : [];
+            }
+            if (node.nodeType !== Node.ELEMENT_NODE) {
+                return [];
+            }
+
+            const tag = node.tagName.toUpperCase();
+
+            if (/^H[1-6]$/.test(tag)) {
+                const level = Number(tag.slice(1));
+                const text = serializeInlineNodes(Array.from(node.childNodes)).trim();
+                return text ? [`${'#'.repeat(level)} ${text}`] : [];
+            }
+
+            if (tag === 'P') {
+                const text = serializeInlineNodes(Array.from(node.childNodes)).trim();
+                return text ? [text] : [];
+            }
+
+            if (tag === 'UL' || tag === 'OL') {
+                const listItems = Array.from(node.children)
+                    .filter((child) => child.tagName && child.tagName.toUpperCase() === 'LI')
+                    .map((li, idx) => {
+                        const inlineNodes = Array.from(li.childNodes).filter((child) => {
+                            if (child.nodeType !== Node.ELEMENT_NODE) return true;
+                            const childTag = child.tagName.toUpperCase();
+                            return childTag !== 'UL' && childTag !== 'OL';
+                        });
+                        const text = serializeInlineNodes(inlineNodes).trim();
+                        if (tag === 'OL') {
+                            return `${idx + 1}. ${text}`;
+                        }
+                        return `- ${text}`;
+                    })
+                    .filter(Boolean);
+                return listItems.length > 0 ? [listItems.join('\n')] : [];
+            }
+
+            if (tag === 'PRE') {
+                const codeEl = node.querySelector('code');
+                const languageClass = codeEl
+                    ? (codeEl.className || '').split(' ').find((part) => part.startsWith('language-')) || ''
+                    : '';
+                const language = languageClass ? languageClass.replace('language-', '') : '';
+                const codeText = normalizeInlineText(codeEl ? codeEl.textContent : node.textContent || '');
+                return [`\`\`\`${language}\n${codeText.replace(/\n$/, '')}\n\`\`\``];
+            }
+
+            if (tag === 'HR') {
+                return ['---'];
+            }
+
+            if (tag === 'DIV') {
+                const nested = [];
+                Array.from(node.childNodes).forEach((child) => {
+                    nested.push(...serializeBlockNode(child));
+                });
+                return nested;
+            }
+
+            const fallback = serializeInlineNodes(Array.from(node.childNodes)).trim();
+            return fallback ? [fallback] : [];
+        };
+
+        const blocks = [];
+        Array.from(previewEl.childNodes).forEach((node) => {
+            blocks.push(...serializeBlockNode(node));
+        });
+
+        return blocks.join('\n\n').replace(/\n{3,}/g, '\n\n').trimEnd();
+    };
+
     const getProjectsForDocs = () => {
         const projects = app.store.getProjects();
         const mode = app.store.projectViewMode;
@@ -315,6 +429,7 @@ function renderDocsView(app, container) {
     const contextKey = projectContexts.map((ctx) => ctx.project.id).join(',');
     const draft = app.docsDraft && app.docsDraft.key === contextKey ? app.docsDraft : null;
     const initialText = draft && draft.dirty ? draft.text : combinedMarkdown;
+
     if (!app.docsCollapsedByContext || typeof app.docsCollapsedByContext !== 'object') {
         app.docsCollapsedByContext = {};
     }
@@ -329,6 +444,10 @@ function renderDocsView(app, container) {
     if (!validModes.has(app.docsEditorMode)) {
         app.docsEditorMode = validModes.has(settingMode) ? settingMode : 'edit';
     }
+
+    const previewInteraction = app.settings && typeof app.settings.get === 'function'
+        ? app.settings.get('docs.previewInteraction')
+        : 'standard';
 
     container.innerHTML = `
         <div class="docs-view">
@@ -391,6 +510,36 @@ function renderDocsView(app, container) {
         return nodes;
     };
 
+    const isPreviewEditActive = () => {
+        if (previewInteraction !== 'preview-edit') return false;
+        return app.docsEditorMode === 'preview' || app.docsEditorMode === 'split';
+    };
+
+    const applyHeadingLevelClasses = () => {
+        const headings = Array.from(preview.querySelectorAll('h2, h3, h4, h5, h6'));
+        headings.forEach((heading) => {
+            const level = getHeadingLevel(heading);
+            if (!level) return;
+            heading.classList.add(`docs-heading-level-${level}`);
+        });
+    };
+
+    const applySectionIndentation = () => {
+        const headings = Array.from(preview.querySelectorAll('h2, h3, h4, h5, h6'));
+        headings.forEach((heading) => {
+            const level = getHeadingLevel(heading);
+            if (level === null || level < 2) return;
+            const contentIndentPx = Math.max(0, (level - 2) * 20);
+            const sectionNodes = getHeadingSectionNodes(heading);
+            sectionNodes.forEach((node) => {
+                if (getHeadingLevel(node) === null) {
+                    node.classList.add('docs-section-content');
+                    node.style.marginLeft = `${contentIndentPx}px`;
+                }
+            });
+        });
+    };
+
     const applyHeadingCollapseControls = () => {
         const collapsedSet = app.docsCollapsedByContext[contextKey];
         const headings = Array.from(preview.querySelectorAll('h2, h3, h4, h5, h6'));
@@ -402,10 +551,8 @@ function renderDocsView(app, container) {
             const key = `${level}:${index}:${rawTitle}`;
             const contentHtml = heading.innerHTML;
             const sectionNodes = getHeadingSectionNodes(heading);
-            const contentIndentPx = Math.max(0, (level - 2) * 20);
 
             heading.classList.add('docs-collapsible-heading');
-            heading.classList.add(`docs-heading-level-${level}`);
             heading.innerHTML = '';
 
             const btn = document.createElement('button');
@@ -422,10 +569,6 @@ function renderDocsView(app, container) {
                 btn.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
                 sectionNodes.forEach((node) => {
                     node.classList.toggle('docs-collapsed-content', collapsed);
-                    if (getHeadingLevel(node) === null) {
-                        node.classList.add('docs-section-content');
-                        node.style.marginLeft = `${contentIndentPx}px`;
-                    }
                 });
             };
 
@@ -443,9 +586,21 @@ function renderDocsView(app, container) {
         });
     };
 
+    const applyPreviewEditState = () => {
+        const editable = isPreviewEditActive();
+        preview.classList.toggle('docs-preview-editable', editable);
+        preview.contentEditable = editable ? 'true' : 'false';
+        preview.spellcheck = editable;
+    };
+
     const updatePreview = () => {
         preview.innerHTML = renderMarkdown(editor.value);
-        applyHeadingCollapseControls();
+        applyHeadingLevelClasses();
+        applySectionIndentation();
+        if (!isPreviewEditActive()) {
+            applyHeadingCollapseControls();
+        }
+        applyPreviewEditState();
     };
 
     const applyMode = (mode) => {
@@ -473,6 +628,7 @@ function renderDocsView(app, container) {
     const saveDraft = () => {
         const blocks = splitProjectBlocks(editor.value, projectContexts.length);
         const apiCalls = [];
+        const taskNoteApiCalls = [];
         let changed = false;
 
         projectContexts.forEach((ctx, idx) => {
@@ -488,7 +644,23 @@ function renderDocsView(app, container) {
             const visibleEntries = collectTaskEntries(ctx.visibleRoots);
             visibleEntries.forEach((entry, sectionIdx) => {
                 if (parsed.sections[sectionIdx] !== undefined) {
-                    nextSections[entry.id] = parsed.sections[sectionIdx];
+                    const sectionText = parsed.sections[sectionIdx] || '';
+                    nextSections[entry.id] = sectionText;
+                    const task = app.store.findTask(entry.id);
+                    if (task) {
+                        const currentNotes = typeof task.notes === 'string' ? task.notes : '';
+                        if (currentNotes !== sectionText) {
+                            task.notes = sectionText;
+                            if (app.apiClient) {
+                                taskNoteApiCalls.push(
+                                    app.apiClient.updateTask(task.id, { notes: sectionText }).catch((error) => {
+                                        app.apiClient.reportError(error, 'Task notes sync failed');
+                                        throw error;
+                                    })
+                                );
+                            }
+                        }
+                    }
                 }
             });
 
@@ -523,7 +695,9 @@ function renderDocsView(app, container) {
             }
         });
 
-        if (!changed) {
+        const allApiCalls = [...apiCalls, ...taskNoteApiCalls];
+
+        if (!changed && allApiCalls.length === 0) {
             syncDraft(false);
             app.showToast('No docs changes to save');
             return;
@@ -536,13 +710,13 @@ function renderDocsView(app, container) {
             app.render();
         };
 
-        if (apiCalls.length === 0) {
+        if (allApiCalls.length === 0) {
             finalize();
             return;
         }
 
         saveBtn.disabled = true;
-        Promise.all(apiCalls)
+        Promise.all(allApiCalls)
             .then(() => {
                 finalize();
             })
@@ -570,12 +744,27 @@ function renderDocsView(app, container) {
         }
     });
 
-    editor.addEventListener('keydown', (e) => {
+    preview.addEventListener('input', () => {
+        if (!isPreviewEditActive()) return;
+        editor.value = serializePreviewToMarkdown(preview);
+        syncDraft(true);
+    });
+
+    preview.addEventListener('click', (e) => {
+        if (isPreviewEditActive() && e.target.closest('a')) {
+            e.preventDefault();
+        }
+    });
+
+    const handleSaveHotkey = (e) => {
         if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 's') {
             e.preventDefault();
             saveDraft();
         }
-    });
+    };
+
+    editor.addEventListener('keydown', handleSaveHotkey);
+    preview.addEventListener('keydown', handleSaveHotkey);
 
     applyMode(app.docsEditorMode);
 }

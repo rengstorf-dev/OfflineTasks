@@ -51,7 +51,8 @@
                         nodeSize: 'medium'
                     },
                     docs: {
-                        editorMode: 'edit'
+                        editorMode: 'edit',
+                        previewInteraction: 'standard'
                     }
                 };
 

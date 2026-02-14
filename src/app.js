@@ -1247,6 +1247,13 @@ class App {
     showNodeModal(taskId) {
         const task = this.store.findTask(taskId);
         if (!task) return;
+        const taskProject = this.store.getTaskProject(taskId);
+        const docsSectionNotes = taskProject && taskProject.docsSections
+            ? (taskProject.docsSections[taskId] || '')
+            : '';
+        const effectiveNotes = (typeof task.notes === 'string' && task.notes.length > 0)
+            ? task.notes
+            : docsSectionNotes;
 
         const modal = document.getElementById('nodeModal');
         const content = document.getElementById('nodeModalContent');
@@ -1275,6 +1282,13 @@ class App {
                 <div class=\"detail-field\">
                     <div class=\"detail-label\">Description</div>
                     <p>${task.description}</p>
+                </div>
+            ` : ''}
+
+            ${effectiveNotes ? `
+                <div class=\"detail-field\">
+                    <div class=\"detail-label\">Notes</div>
+                    <p>${effectiveNotes}</p>
                 </div>
             ` : ''}
 
@@ -1360,6 +1374,12 @@ class App {
         const isParentTask = this.store.tasks.some(t => t.id === taskId);
         const projects = this.store.getProjects();
         const taskProject = this.store.getTaskProject(taskId);
+        const docsSectionNotes = taskProject && taskProject.docsSections
+            ? (taskProject.docsSections[taskId] || '')
+            : '';
+        const effectiveNotes = (typeof task.notes === 'string' && task.notes.length > 0)
+            ? task.notes
+            : docsSectionNotes;
         const assigneeProjectId = taskProject ? taskProject.id : (task.projectId || null);
         const teamMembers = this.getProjectTeamMembers(assigneeProjectId);
         const assigneeValue = task.metadata.assignee || '';
@@ -1407,6 +1427,11 @@ class App {
             <div class="detail-field">
                 <div class="detail-label">Description</div>
                 <textarea class="detail-input detail-textarea" id="taskDescription">${task.description || ''}</textarea>
+            </div>
+
+            <div class="detail-field">
+                <div class="detail-label">Notes</div>
+                <textarea class="detail-input detail-textarea" id="taskNotes">${effectiveNotes}</textarea>
             </div>
 
             ${projectDropdownHtml}
@@ -1495,6 +1520,7 @@ class App {
             const updates = {
                 title: panel.querySelector('#taskTitle').value,
                 description: panel.querySelector('#taskDescription').value,
+                notes: panel.querySelector('#taskNotes').value,
                 'metadata.status': panel.querySelector('#taskStatus').value,
                 'metadata.priority': panel.querySelector('#taskPriority').value,
                 'metadata.assignee': panel.querySelector('#taskAssignee').value,
@@ -1512,6 +1538,7 @@ class App {
         // Attach autosave to all input fields
         panel.querySelector('#taskTitle').addEventListener('input', autosave);
         panel.querySelector('#taskDescription').addEventListener('input', autosave);
+        panel.querySelector('#taskNotes').addEventListener('input', autosave);
         panel.querySelector('#taskStatus').addEventListener('change', autosave);
         panel.querySelector('#taskPriority').addEventListener('change', autosave);
         panel.querySelector('#taskAssignee').addEventListener('change', autosave);

@@ -6,6 +6,7 @@ const mapRowToTask = (row) => ({
   id: row.id,
   title: row.title,
   description: row.description,
+  notes: row.notes || '',
   projectId: row.project_id,
   metadata: {
     status: row.status,
@@ -34,6 +35,7 @@ const createTask = (db, data) => {
   const id = data.id || generateId();
   const title = data.title || '';
   const description = data.description || '';
+  const notes = data.notes || '';
   const projectId = data.projectId ?? null;
   const parentId = data.parentId ?? null;
   const metadata = data.metadata || {};
@@ -48,15 +50,16 @@ const createTask = (db, data) => {
 
   db.prepare(
     `INSERT INTO tasks
-      (id, parent_id, project_id, title, description, status, priority, assignee, start_date, end_date, kanban_order, container_color, sort_index)
+      (id, parent_id, project_id, title, description, notes, status, priority, assignee, start_date, end_date, kanban_order, container_color, sort_index)
      VALUES
-      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     id,
     parentId,
     projectId,
     title,
     description,
+    notes,
     status,
     priority,
     assignee,
@@ -71,6 +74,7 @@ const createTask = (db, data) => {
     id,
     title,
     description,
+    notes,
     projectId,
     metadata: { status, priority, assignee, startDate, endDate, kanbanOrder, containerColor },
     children: [],
@@ -90,6 +94,7 @@ const updateTask = (db, id, updates) => {
   const next = {
     title: hasField('title') ? updates.title : existing.title,
     description: hasField('description') ? updates.description : existing.description,
+    notes: hasField('notes') ? updates.notes : existing.notes,
     projectId: hasField('projectId') ? updates.projectId : existing.projectId,
     parentId: hasField('parentId') ? updates.parentId : existing.parentId,
     sortIndex: hasField('sortIndex') ? updates.sortIndex : existing.sortIndex,
@@ -102,6 +107,7 @@ const updateTask = (db, id, updates) => {
       project_id = ?,
       title = ?,
       description = ?,
+      notes = ?,
       status = ?,
       priority = ?,
       assignee = ?,
@@ -116,6 +122,7 @@ const updateTask = (db, id, updates) => {
     next.projectId,
     next.title,
     next.description,
+    next.notes,
     next.metadata.status,
     next.metadata.priority,
     next.metadata.assignee,
