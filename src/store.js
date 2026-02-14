@@ -292,6 +292,7 @@
                 const apiUpdates = {};
                 const metadataUpdates = {};
                 let statusUpdated = false;
+                let docsProjectForNoteSync = null;
 
                 Object.keys(updates).forEach(key => {
                     if (key.startsWith('metadata.')) {
@@ -307,6 +308,10 @@
                     }
                 });
 
+                if (Object.prototype.hasOwnProperty.call(updates, 'notes')) {
+                    docsProjectForNoteSync = this.syncTaskNoteToProjectDocs(id, task.notes || '');
+                }
+
                 const updatedParents = statusUpdated ? this.updateAncestorStatuses(id) : [];
                 this.saveState();
                 this.notify();
@@ -317,6 +322,19 @@
                     this.apiClient.updateTask(id, apiUpdates).catch((error) => {
                         this.apiClient.reportError(error, 'Task update failed', { silent: true });
                     });
+                    if (docsProjectForNoteSync) {
+                        this.apiClient.updateProject(docsProjectForNoteSync.id, {
+                            name: docsProjectForNoteSync.name,
+                            color: docsProjectForNoteSync.color,
+                            statusColors: docsProjectForNoteSync.statusColors,
+                            priorityColors: docsProjectForNoteSync.priorityColors,
+                            teamIds: docsProjectForNoteSync.teamIds || [],
+                            docsMarkdown: docsProjectForNoteSync.docsMarkdown || '',
+                            docsSections: docsProjectForNoteSync.docsSections || {}
+                        }).catch((error) => {
+                            this.apiClient.reportError(error, 'Project docs sync failed', { silent: true });
+                        });
+                    }
                     if (updatedParents.length > 0) {
                         updatedParents.forEach(({ id: parentId, status }) => {
                             this.apiClient.updateTask(parentId, { metadata: { status } }).catch((error) => {
@@ -1094,6 +1112,89 @@
                 }
 
                 return groups;
+            }
+
+            normalizeDocsLineEndings(text) {
+                return String(text || '').replace(/\r\n/g, '\n');
+            }
+
+            trimDocsBlankEdges(text) {
+                const lines = this.normalizeDocsLineEndings(text).split('\n');
+                while (lines.length > 0 && lines[0].trim() === '') {
+                    lines.shift();
+                }
+                while (lines.length > 0 && lines[lines.length - 1].trim() === '') {
+                    lines.pop();
+                }
+                return lines.join('\n');
+            }
+
+            buildProjectTaskSectionsMarkdown(tasks, docsSections, depth = 0) {
+                const lines = [];
+                tasks.forEach((task) => {
+                    const level = Math.min(depth + 2, 6);
+                    lines.push(`${'#'.repeat(level)} ${task.title || ''}`);
+                    lines.push('');
+
+                    const sectionText = this.normalizeDocsLineEndings(
+                        (docsSections && typeof docsSections === 'object' ? docsSections[task.id] : '') || ''
+                    ).replace(/\s+$/g, '');
+
+                    if (sectionText) {
+                        lines.push(sectionText);
+                        lines.push('');
+                    } else {
+                        lines.push('');
+                    }
+
+                    if (task.children && task.children.length > 0) {
+                        const childMarkdown = this.buildProjectTaskSectionsMarkdown(task.children, docsSections, depth + 1);
+                        if (childMarkdown) {
+                            lines.push(childMarkdown);
+                        }
+                    }
+                });
+
+                return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+            }
+
+            buildProjectDocsMarkdown(project) {
+                if (!project) return '';
+                const docsSections = project.docsSections && typeof project.docsSections === 'object' ? project.docsSections : {};
+                const intro = this.trimDocsBlankEdges(docsSections._intro || '');
+                const taskMarkdown = this.buildProjectTaskSectionsMarkdown(
+                    this.tasks.filter((task) => task.projectId === project.id),
+                    docsSections
+                );
+
+                const lines = [];
+                if (intro) {
+                    lines.push(intro);
+                    lines.push('');
+                }
+                if (taskMarkdown) {
+                    lines.push(taskMarkdown);
+                }
+                return lines.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd();
+            }
+
+            syncTaskNoteToProjectDocs(taskId, noteText) {
+                const project = this.getTaskProject(taskId);
+                if (!project || !project.name) return null;
+
+                if (!project.docsSections || typeof project.docsSections !== 'object' || Array.isArray(project.docsSections)) {
+                    project.docsSections = {};
+                }
+
+                const nextNote = typeof noteText === 'string' ? noteText : '';
+                const currentNote = typeof project.docsSections[taskId] === 'string' ? project.docsSections[taskId] : '';
+                if (currentNote === nextNote) {
+                    return null;
+                }
+
+                project.docsSections[taskId] = nextNote;
+                project.docsMarkdown = this.buildProjectDocsMarkdown(project);
+                return project;
             }
 
             // ========== Team Methods ==========
