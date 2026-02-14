@@ -51,7 +51,7 @@
                         nodeSize: 'medium'
                     },
                     docs: {
-                        editorMode: 'plain'
+                        editorMode: 'edit'
                     }
                 };
 

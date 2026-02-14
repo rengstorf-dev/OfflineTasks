@@ -2,11 +2,14 @@ function renderDocsView(app, container) {
     const PROJECT_DELIMITER = '\n\n---\n\n';
 
     const normalizeLineEndings = (text) => (text || '').replace(/\r\n/g, '\n');
-    const escapeForTextarea = (text) =>
+
+    const escapeHtml = (text) =>
         (text || '')
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
 
     const trimBlankEdges = (text) => {
         const lines = normalizeLineEndings(text).split('\n');
@@ -24,6 +27,135 @@ function renderDocsView(app, container) {
             return {};
         }
         return { ...value };
+    };
+
+    const renderInlineMarkdown = (text) => {
+        let html = escapeHtml(text || '');
+
+        const codeTokens = [];
+        html = html.replace(/`([^`]+)`/g, (_, code) => {
+            const token = `@@CODE_${codeTokens.length}@@`;
+            codeTokens.push(`<code>${code}</code>`);
+            return token;
+        });
+
+        html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_, label, url) => {
+            return `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer">${label}</a>`;
+        });
+
+        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        html = html.replace(/(^|[^*])\*(?!\*)([^*]+)\*(?!\*)/g, '$1<em>$2</em>');
+
+        codeTokens.forEach((codeHtml, index) => {
+            html = html.replace(`@@CODE_${index}@@`, codeHtml);
+        });
+
+        return html;
+    };
+
+    const renderMarkdown = (text) => {
+        const lines = normalizeLineEndings(text).split('\n');
+        const html = [];
+
+        let paragraphLines = [];
+        let listType = null;
+        let listItems = [];
+        let inFence = false;
+        let fenceLang = '';
+        let fenceLines = [];
+
+        const flushParagraph = () => {
+            if (paragraphLines.length === 0) return;
+            const content = renderInlineMarkdown(paragraphLines.join(' '));
+            html.push(`<p>${content}</p>`);
+            paragraphLines = [];
+        };
+
+        const flushList = () => {
+            if (!listType || listItems.length === 0) return;
+            const tag = listType === 'ordered' ? 'ol' : 'ul';
+            html.push(`<${tag}>${listItems.map((item) => `<li>${item}</li>`).join('')}</${tag}>`);
+            listType = null;
+            listItems = [];
+        };
+
+        const flushFence = () => {
+            if (!inFence) return;
+            const languageClass = fenceLang ? ` class="language-${escapeHtml(fenceLang)}"` : '';
+            html.push(`<pre><code${languageClass}>${escapeHtml(fenceLines.join('\n'))}</code></pre>`);
+            inFence = false;
+            fenceLang = '';
+            fenceLines = [];
+        };
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+
+            if (inFence) {
+                if (/^```/.test(line.trim())) {
+                    flushFence();
+                } else {
+                    fenceLines.push(line);
+                }
+                continue;
+            }
+
+            const fenceStart = line.match(/^```\s*([\w-]+)?\s*$/);
+            if (fenceStart) {
+                flushParagraph();
+                flushList();
+                inFence = true;
+                fenceLang = fenceStart[1] || '';
+                fenceLines = [];
+                continue;
+            }
+
+            const trimmed = line.trim();
+            if (!trimmed) {
+                flushParagraph();
+                flushList();
+                continue;
+            }
+
+            const heading = line.match(/^(#{1,6})\s+(.+)$/);
+            if (heading) {
+                flushParagraph();
+                flushList();
+                const level = heading[1].length;
+                html.push(`<h${level}>${renderInlineMarkdown(heading[2].trim())}</h${level}>`);
+                continue;
+            }
+
+            if (/^---+$/.test(trimmed)) {
+                flushParagraph();
+                flushList();
+                html.push('<hr>');
+                continue;
+            }
+
+            const unordered = line.match(/^\s*[-*+]\s+(.+)$/);
+            const ordered = line.match(/^\s*\d+\.\s+(.+)$/);
+
+            if (unordered || ordered) {
+                flushParagraph();
+                const nextType = ordered ? 'ordered' : 'unordered';
+                if (listType && listType !== nextType) {
+                    flushList();
+                }
+                listType = nextType;
+                listItems.push(renderInlineMarkdown((ordered || unordered)[1].trim()));
+                continue;
+            }
+
+            flushList();
+            paragraphLines.push(trimmed);
+        }
+
+        flushParagraph();
+        flushList();
+        flushFence();
+
+        return html.join('\n');
     };
 
     const getProjectsForDocs = () => {
@@ -180,6 +312,18 @@ function renderDocsView(app, container) {
         .join(PROJECT_DELIMITER)
         .trimEnd();
 
+    const contextKey = projectContexts.map((ctx) => ctx.project.id).join(',');
+    const draft = app.docsDraft && app.docsDraft.key === contextKey ? app.docsDraft : null;
+    const initialText = draft && draft.dirty ? draft.text : combinedMarkdown;
+
+    const validModes = new Set(['edit', 'preview', 'split']);
+    const settingMode = app.settings && typeof app.settings.get === 'function'
+        ? app.settings.get('docs.editorMode')
+        : null;
+    if (!validModes.has(app.docsEditorMode)) {
+        app.docsEditorMode = validModes.has(settingMode) ? settingMode : 'edit';
+    }
+
     container.innerHTML = `
         <div class="docs-view">
             <div class="docs-toolbar">
@@ -187,14 +331,53 @@ function renderDocsView(app, container) {
                     <span class="docs-meta-label">Project Docs</span>
                     <span class="docs-meta-value">${projectContexts.length} project${projectContexts.length === 1 ? '' : 's'}</span>
                 </div>
-                <button class="docs-save-btn" id="docsSaveBtn">Save Docs</button>
+                <div class="docs-actions">
+                    <div class="docs-mode-toggle">
+                        <button class="docs-mode-btn" data-docs-mode="edit">Edit</button>
+                        <button class="docs-mode-btn" data-docs-mode="preview">Preview</button>
+                        <button class="docs-mode-btn" data-docs-mode="split">Split</button>
+                    </div>
+                    <button class="docs-save-btn" id="docsSaveBtn">Save Docs</button>
+                </div>
             </div>
-            <textarea class="docs-editor" id="docsEditor" spellcheck="false">${escapeForTextarea(combinedMarkdown)}</textarea>
+            <div class="docs-content" id="docsContent">
+                <textarea class="docs-editor" id="docsEditor" spellcheck="false"></textarea>
+                <div class="docs-preview" id="docsPreview"></div>
+            </div>
         </div>
     `;
 
     const editor = container.querySelector('#docsEditor');
+    const preview = container.querySelector('#docsPreview');
+    const content = container.querySelector('#docsContent');
     const saveBtn = container.querySelector('#docsSaveBtn');
+    const modeButtons = Array.from(container.querySelectorAll('[data-docs-mode]'));
+
+    editor.value = initialText;
+
+    const syncDraft = (dirty) => {
+        app.docsDraft = {
+            key: contextKey,
+            text: editor.value,
+            dirty
+        };
+    };
+
+    const updatePreview = () => {
+        preview.innerHTML = renderMarkdown(editor.value);
+    };
+
+    const applyMode = (mode) => {
+        app.docsEditorMode = validModes.has(mode) ? mode : 'edit';
+        if (app.settings && typeof app.settings.set === 'function') {
+            app.settings.set('docs.editorMode', app.docsEditorMode);
+        }
+        content.className = `docs-content docs-content-${app.docsEditorMode}`;
+        modeButtons.forEach((btn) => {
+            btn.classList.toggle('active', btn.dataset.docsMode === app.docsEditorMode);
+        });
+        updatePreview();
+    };
 
     const getProjectPayload = (project) => ({
         name: project.name,
@@ -260,11 +443,13 @@ function renderDocsView(app, container) {
         });
 
         if (!changed) {
+            syncDraft(false);
             app.showToast('No docs changes to save');
             return;
         }
 
         const finalize = () => {
+            syncDraft(false);
             app.store.saveState();
             app.showToast('Docs saved');
             app.render();
@@ -287,8 +472,21 @@ function renderDocsView(app, container) {
 
     app.saveDocsDraft = saveDraft;
 
+    modeButtons.forEach((btn) => {
+        btn.addEventListener('click', () => {
+            applyMode(btn.dataset.docsMode);
+        });
+    });
+
     saveBtn.addEventListener('click', () => {
         saveDraft();
+    });
+
+    editor.addEventListener('input', () => {
+        syncDraft(true);
+        if (app.docsEditorMode === 'split') {
+            updatePreview();
+        }
     });
 
     editor.addEventListener('keydown', (e) => {
@@ -297,4 +495,6 @@ function renderDocsView(app, container) {
             saveDraft();
         }
     });
+
+    applyMode(app.docsEditorMode);
 }
