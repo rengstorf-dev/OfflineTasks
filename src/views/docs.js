@@ -169,6 +169,9 @@ function renderDocsView(app, container) {
             if (node.nodeType !== Node.ELEMENT_NODE) {
                 return '';
             }
+            if (node.classList && node.classList.contains('docs-collapse-btn')) {
+                return '';
+            }
 
             const tag = node.tagName.toUpperCase();
             if (tag === 'BR') return '\n';
@@ -558,6 +561,8 @@ function renderDocsView(app, container) {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'docs-collapse-btn';
+            btn.setAttribute('contenteditable', 'false');
+            btn.setAttribute('tabindex', '-1');
 
             const label = document.createElement('span');
             label.className = 'docs-heading-text';
@@ -597,9 +602,7 @@ function renderDocsView(app, container) {
         preview.innerHTML = renderMarkdown(editor.value);
         applyHeadingLevelClasses();
         applySectionIndentation();
-        if (!isPreviewEditActive()) {
-            applyHeadingCollapseControls();
-        }
+        applyHeadingCollapseControls();
         applyPreviewEditState();
     };
 
@@ -754,6 +757,40 @@ function renderDocsView(app, container) {
         if (isPreviewEditActive() && e.target.closest('a')) {
             e.preventDefault();
         }
+    });
+
+    preview.addEventListener('keydown', (e) => {
+        if (!isPreviewEditActive()) return;
+        if (e.key !== 'Enter' || e.shiftKey) return;
+
+        const selection = window.getSelection();
+        let anchor = selection && selection.anchorNode ? selection.anchorNode : null;
+        if (anchor && anchor.nodeType === Node.TEXT_NODE) {
+            anchor = anchor.parentElement;
+        }
+
+        const target = e.target instanceof Element ? e.target : null;
+        const heading = (anchor instanceof Element
+            ? anchor.closest('h1, h2, h3, h4, h5, h6')
+            : null) || (target ? target.closest('h1, h2, h3, h4, h5, h6') : null);
+        if (!heading || !preview.contains(heading)) return;
+
+        e.preventDefault();
+        e.stopPropagation();
+        const paragraph = document.createElement('p');
+        paragraph.appendChild(document.createElement('br'));
+        heading.insertAdjacentElement('afterend', paragraph);
+
+        if (selection) {
+            const range = document.createRange();
+            range.setStart(paragraph, 0);
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+
+        editor.value = serializePreviewToMarkdown(preview);
+        syncDraft(true);
     });
 
     const handleSaveHotkey = (e) => {

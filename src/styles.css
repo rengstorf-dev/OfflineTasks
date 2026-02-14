@@ -225,13 +225,13 @@
         }
 
         body.dark-mode .docs-preview.docs-preview-editable {
-            background: #111827;
-            outline: 1px solid #1e40af;
+            background: #161616;
+            outline: 1px solid #3a3a3a;
             outline-offset: -1px;
         }
 
         body.dark-mode .docs-preview.docs-preview-editable:focus {
-            outline: 2px solid #3b82f6;
+            outline: 2px solid #2563eb;
             outline-offset: -2px;
         }
 
@@ -2269,8 +2269,8 @@
 
         .docs-preview.docs-preview-editable {
             cursor: text;
-            background: #f8fbff;
-            outline: 1px solid #bfdbfe;
+            background: #ffffff;
+            outline: 1px solid #d1d5db;
             outline-offset: -1px;
         }
 
@@ -2506,6 +2506,12 @@
             font-size: 13px;
         }
 
+        body.dark-mode .related-item {
+            background: #1f2937;
+            border: 1px solid #374151;
+            color: #e5e7eb;
+        }
+
         .remove-related {
             cursor: pointer;
             color: #ef4444;
@@ -2517,6 +2523,14 @@
 
         .remove-related:hover {
             color: #dc2626;
+        }
+
+        body.dark-mode .remove-related {
+            color: #fca5a5;
+        }
+
+        body.dark-mode .remove-related:hover {
+            color: #f87171;
         }
 
         /* Modal */
