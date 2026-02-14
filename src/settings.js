@@ -49,6 +49,9 @@
                     mindmap: {
                         layoutMode: 'tree',
                         nodeSize: 'medium'
+                    },
+                    docs: {
+                        editorMode: 'plain'
                     }
                 };
 

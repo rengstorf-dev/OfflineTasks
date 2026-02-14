@@ -24,7 +24,9 @@ class App {
             globalThis.ErrorReporting.init({ settings: this.settings });
             globalThis.ErrorReporting.installGlobalHandlers();
         }
-        this.currentView = this.settings.get('defaultView') || 'outline';
+        const defaultView = this.settings.get('defaultView') || 'outline';
+        const supportedViews = new Set(['outline', 'kanban', 'gantt', 'mindmap', 'docs']);
+        this.currentView = supportedViews.has(defaultView) ? defaultView : 'outline';
         this.expandedTeams = new Set();
         this.linkMode = false;
         this.linkSource = null;
@@ -253,9 +255,17 @@ class App {
 
         // Global keyboard shortcuts for undo/redo
         document.addEventListener('keydown', (e) => {
+            const activeElement = document.activeElement;
+            const tag = activeElement && activeElement.tagName ? activeElement.tagName.toLowerCase() : '';
+            const isTextInput = !!activeElement && (
+                activeElement.isContentEditable ||
+                tag === 'input' ||
+                tag === 'textarea' ||
+                tag === 'select'
+            );
+
             // Prevent Tab navigation when in outline view
             if (this.currentView === 'outline' && e.key === 'Tab') {
-                const activeElement = document.activeElement;
                 const isEditingTitle = activeElement && 
                                       activeElement.getAttribute('contenteditable') === 'true' &&
                                       activeElement.classList.contains('task-title');
@@ -270,6 +280,7 @@ class App {
             // Ctrl+Z or Cmd+Z for undo
             // Skip if in mindmap view (it has its own undo/redo)
             if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                if (isTextInput) return;
                 if (this.currentView === 'mindmap') {
                     // Let mindmap handle its own undo
                     return;
@@ -283,6 +294,7 @@ class App {
             // Skip if in mindmap view (it has its own undo/redo)
             else if (((e.ctrlKey || e.metaKey) && e.key === 'y') ||
                      ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'z')) {
+                if (isTextInput) return;
                 if (this.currentView === 'mindmap') return;
                 e.preventDefault();
                 if (this.store.redo()) {
@@ -338,6 +350,7 @@ class App {
         renderSettingsPane(this);
 
         const container = document.getElementById('viewContainer');
+        this.saveDocsDraft = null;
 
         // Sync view switcher buttons with current view
         document.querySelectorAll('[data-view]').forEach(btn => {
@@ -356,6 +369,9 @@ class App {
                 break;
             case 'mindmap':
                 renderMindMapView(this, container);
+                break;
+            case 'docs':
+                renderDocsView(this, container);
                 break;
         }
 

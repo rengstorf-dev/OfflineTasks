@@ -15,6 +15,7 @@ const scriptOrder = [
     path.join(root, 'src', 'views', 'kanban.js'),
     path.join(root, 'src', 'views', 'gantt.js'),
     path.join(root, 'src', 'views', 'mindmap.js'),
+    path.join(root, 'src', 'views', 'docs.js'),
     path.join(root, 'src', 'ui', 'toolbar.js'),
     path.join(root, 'src', 'ui', 'modals.js'),
     path.join(root, 'src', 'app.js'),

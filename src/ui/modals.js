@@ -848,7 +848,7 @@ async function exportDataFromApi(app) {
     });
 
     const exportPayload = {
-        version: '1.3',
+        version: '1.4',
         exportDate: new Date().toISOString(),
         tasks: tasks,
         projects: projects,
@@ -930,7 +930,9 @@ async function importDataToApi(app, importedData) {
             name: project.name || '',
             color: project.color || '#777777',
             statusColors: project.statusColors || null,
-            priorityColors: project.priorityColors || null
+            priorityColors: project.priorityColors || null,
+            docsMarkdown: project.docsMarkdown || '',
+            docsSections: project.docsSections || {}
         }));
     }
 

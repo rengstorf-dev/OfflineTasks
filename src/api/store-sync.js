@@ -97,7 +97,9 @@ const loadAppData = async (apiClient, store, settings) => {
             const fallbackTeams = projectTeams && projectTeams[project.id] ? projectTeams[project.id] : [];
             return {
                 ...project,
-                teamIds: Array.isArray(project.teamIds) ? project.teamIds : fallbackTeams
+                teamIds: Array.isArray(project.teamIds) ? project.teamIds : fallbackTeams,
+                docsMarkdown: typeof project.docsMarkdown === 'string' ? project.docsMarkdown : '',
+                docsSections: project.docsSections && typeof project.docsSections === 'object' ? project.docsSections : {}
             };
         });
         store.relatedTasks = new Map();

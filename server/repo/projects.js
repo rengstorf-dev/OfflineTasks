@@ -2,7 +2,7 @@ const crypto = require('crypto');
 
 const generateId = () => crypto.randomUUID();
 
-const parseColors = (raw) => {
+const parseJson = (raw) => {
   if (!raw) return null;
   try {
     return JSON.parse(raw);
@@ -13,30 +13,34 @@ const parseColors = (raw) => {
 
 const listProjects = (db) => {
   return db
-    .prepare('SELECT id, name, color, status_colors, priority_colors, team_ids FROM projects ORDER BY name')
+    .prepare('SELECT id, name, color, status_colors, priority_colors, team_ids, docs_markdown, docs_sections FROM projects ORDER BY name')
     .all()
     .map((row) => ({
       id: row.id,
       name: row.name,
       color: row.color,
-      statusColors: parseColors(row.status_colors),
-      priorityColors: parseColors(row.priority_colors),
-      teamIds: parseColors(row.team_ids) || [],
+      statusColors: parseJson(row.status_colors),
+      priorityColors: parseJson(row.priority_colors),
+      teamIds: parseJson(row.team_ids) || [],
+      docsMarkdown: row.docs_markdown || '',
+      docsSections: parseJson(row.docs_sections) || {},
     }));
 };
 
 const getProject = (db, id) => {
   const row = db
-    .prepare('SELECT id, name, color, status_colors, priority_colors, team_ids FROM projects WHERE id = ?')
+    .prepare('SELECT id, name, color, status_colors, priority_colors, team_ids, docs_markdown, docs_sections FROM projects WHERE id = ?')
     .get(id);
   if (!row) return null;
   return {
     id: row.id,
     name: row.name,
     color: row.color,
-    statusColors: parseColors(row.status_colors),
-    priorityColors: parseColors(row.priority_colors),
-    teamIds: parseColors(row.team_ids) || [],
+    statusColors: parseJson(row.status_colors),
+    priorityColors: parseJson(row.priority_colors),
+    teamIds: parseJson(row.team_ids) || [],
+    docsMarkdown: row.docs_markdown || '',
+    docsSections: parseJson(row.docs_sections) || {},
   };
 };
 
@@ -47,10 +51,12 @@ const createProject = (db, data) => {
   const statusColors = data.statusColors ? JSON.stringify(data.statusColors) : null;
   const priorityColors = data.priorityColors ? JSON.stringify(data.priorityColors) : null;
   const teamIds = data.teamIds ? JSON.stringify(data.teamIds) : null;
+  const docsMarkdown = data.docsMarkdown || '';
+  const docsSections = data.docsSections ? JSON.stringify(data.docsSections) : null;
 
   db.prepare(
-    'INSERT INTO projects (id, name, color, status_colors, priority_colors, team_ids) VALUES (?, ?, ?, ?, ?, ?)'
-  ).run(id, name, color, statusColors, priorityColors, teamIds);
+    'INSERT INTO projects (id, name, color, status_colors, priority_colors, team_ids, docs_markdown, docs_sections) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+  ).run(id, name, color, statusColors, priorityColors, teamIds, docsMarkdown, docsSections);
 
   return {
     id,
@@ -59,6 +65,8 @@ const createProject = (db, data) => {
     statusColors: data.statusColors || null,
     priorityColors: data.priorityColors || null,
     teamIds: data.teamIds || [],
+    docsMarkdown,
+    docsSections: data.docsSections || {},
   };
 };
 
@@ -75,19 +83,25 @@ const updateProject = (db, id, updates) => {
   const priorityColors =
     updates.priorityColors !== undefined ? updates.priorityColors : existing.priorityColors;
   const teamIds = updates.teamIds !== undefined ? updates.teamIds : existing.teamIds;
+  const docsMarkdown =
+    updates.docsMarkdown !== undefined ? updates.docsMarkdown : existing.docsMarkdown;
+  const docsSections =
+    updates.docsSections !== undefined ? updates.docsSections : existing.docsSections;
 
   db.prepare(
-    'UPDATE projects SET name = ?, color = ?, status_colors = ?, priority_colors = ?, team_ids = ? WHERE id = ?'
+    'UPDATE projects SET name = ?, color = ?, status_colors = ?, priority_colors = ?, team_ids = ?, docs_markdown = ?, docs_sections = ? WHERE id = ?'
   ).run(
     name,
     color,
     statusColors ? JSON.stringify(statusColors) : null,
     priorityColors ? JSON.stringify(priorityColors) : null,
     teamIds ? JSON.stringify(teamIds) : null,
+    docsMarkdown || '',
+    docsSections ? JSON.stringify(docsSections) : null,
     id
   );
 
-  return { id, name, color, statusColors, priorityColors, teamIds };
+  return { id, name, color, statusColors, priorityColors, teamIds, docsMarkdown, docsSections };
 };
 
 const deleteProject = (db, id) => {

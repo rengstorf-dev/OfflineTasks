@@ -924,7 +924,9 @@
                     color: this.getNextProjectColor(),
                     statusColors: this.getDefaultStatusColors(),
                     priorityColors: this.getDefaultPriorityColors(),
-                    teamIds: []
+                    teamIds: [],
+                    docsMarkdown: '',
+                    docsSections: {}
                 };
                 this.projects.push(project);
                 this.saveState();
@@ -936,7 +938,9 @@
                         color: project.color,
                         statusColors: project.statusColors,
                         priorityColors: project.priorityColors,
-                        teamIds: project.teamIds
+                        teamIds: project.teamIds,
+                        docsMarkdown: project.docsMarkdown,
+                        docsSections: project.docsSections
                     }).catch((error) => {
                         this.apiClient.reportError(error, 'Project create failed');
                     });
@@ -953,6 +957,8 @@
                 if (updates.statusColors !== undefined) project.statusColors = updates.statusColors;
                 if (updates.priorityColors !== undefined) project.priorityColors = updates.priorityColors;
                 if (updates.teamIds !== undefined) project.teamIds = updates.teamIds;
+                if (updates.docsMarkdown !== undefined) project.docsMarkdown = updates.docsMarkdown;
+                if (updates.docsSections !== undefined) project.docsSections = updates.docsSections;
 
                 this.saveState();
                 this.notify();
@@ -962,7 +968,9 @@
                         color: project.color,
                         statusColors: project.statusColors,
                         priorityColors: project.priorityColors,
-                        teamIds: project.teamIds
+                        teamIds: project.teamIds,
+                        docsMarkdown: project.docsMarkdown || '',
+                        docsSections: project.docsSections || {}
                     }).catch((error) => {
                         this.apiClient.reportError(error, 'Project update failed');
                     });

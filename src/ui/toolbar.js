@@ -356,6 +356,55 @@ function renderSettingsPane(app) {
                 active: app.relateLinkMode,
                 section: 'display'
             }
+        ],
+        docs: [
+            {
+                type: 'single-button',
+                text: app.store.filterMode === 'show' ? '👁 Show' : '🔍 Filter',
+                id: 'toggleFilterMode',
+                active: app.store.filterMode === 'filter',
+                section: 'filters'
+            },
+            { type: 'divider' },
+            {
+                type: 'group',
+                label: '',
+                section: 'filters',
+                items: [
+                    { type: 'button', text: 'To Do', filter: 'todo', active: app.store.selectedFilters.has('todo') },
+                    { type: 'button', text: 'In Progress', filter: 'in-progress', active: app.store.selectedFilters.has('in-progress') },
+                    { type: 'button', text: 'Review', filter: 'review', active: app.store.selectedFilters.has('review') },
+                    { type: 'button', text: 'Done', filter: 'done', active: app.store.selectedFilters.has('done') }
+                ]
+            },
+            { type: 'divider' },
+            {
+                type: 'parent-filter',
+                id: 'parentFilter',
+                section: 'filters'
+            },
+            { type: 'divider' },
+            {
+                type: 'input',
+                placeholder: 'Search tasks...',
+                value: app.store.searchQuery,
+                id: 'searchBox',
+                section: 'filters'
+            },
+            { type: 'divider' },
+            {
+                type: 'related-filter',
+                id: 'relatedFilter',
+                section: 'filters'
+            },
+            { type: 'divider' },
+            {
+                type: 'single-button',
+                text: '💾 Save Docs',
+                id: 'saveDocsBtn',
+                active: false,
+                section: 'display'
+            }
         ]
     };
 
@@ -590,6 +639,12 @@ function renderSettingsPane(app) {
                     button.classList.toggle('active');
                     document.getElementById('relateLinkBanner').classList.toggle('visible', app.relateLinkMode);
                     app.render();
+                });
+            } else if (item.id === 'saveDocsBtn') {
+                button.addEventListener('click', () => {
+                    if (typeof app.saveDocsDraft === 'function') {
+                        app.saveDocsDraft();
+                    }
                 });
             }
 
