@@ -528,11 +528,12 @@ function renderDocsView(app, container) {
     };
 
     const applySectionIndentation = () => {
+        const headingTextOffsetPx = 28;
         const headings = Array.from(preview.querySelectorAll('h2, h3, h4, h5, h6'));
         headings.forEach((heading) => {
             const level = getHeadingLevel(heading);
             if (level === null || level < 2) return;
-            const contentIndentPx = Math.max(0, (level - 2) * 20);
+            const contentIndentPx = Math.max(0, (level - 2) * 20) + headingTextOffsetPx;
             const sectionNodes = getHeadingSectionNodes(heading);
             sectionNodes.forEach((node) => {
                 if (getHeadingLevel(node) === null) {
@@ -773,10 +774,57 @@ function renderDocsView(app, container) {
         const heading = (anchor instanceof Element
             ? anchor.closest('h1, h2, h3, h4, h5, h6')
             : null) || (target ? target.closest('h1, h2, h3, h4, h5, h6') : null);
-        if (!heading || !preview.contains(heading)) return;
+        const activeBlock = (anchor instanceof Element
+            ? anchor.closest('p, div')
+            : null) || (target ? target.closest('p, div') : null);
+        const activeBlockText = activeBlock && preview.contains(activeBlock)
+            ? normalizeInlineText(activeBlock.textContent || '').trim()
+            : '';
+        const markdownHeadingMatch = activeBlockText.match(/^(#{1,6})\s+(.+)$/);
+
+        if (!heading && !markdownHeadingMatch) return;
 
         e.preventDefault();
         e.stopPropagation();
+
+        if (!heading && markdownHeadingMatch) {
+            const level = markdownHeadingMatch[1].length;
+            const headingText = markdownHeadingMatch[2].trim();
+
+            editor.value = serializePreviewToMarkdown(preview);
+            syncDraft(true);
+            updatePreview();
+
+            const convertedHeading = Array.from(preview.querySelectorAll(`h${level}`))
+                .reverse()
+                .find((el) => {
+                    const label = el.querySelector('.docs-heading-text');
+                    const text = (label ? label.textContent : el.textContent) || '';
+                    return text.trim() === headingText;
+                });
+
+            if (!convertedHeading) {
+                return;
+            }
+
+            const paragraph = document.createElement('p');
+            paragraph.appendChild(document.createElement('br'));
+            convertedHeading.insertAdjacentElement('afterend', paragraph);
+
+            const nextSelection = window.getSelection();
+            if (nextSelection) {
+                const range = document.createRange();
+                range.setStart(paragraph, 0);
+                range.collapse(true);
+                nextSelection.removeAllRanges();
+                nextSelection.addRange(range);
+            }
+
+            editor.value = serializePreviewToMarkdown(preview);
+            syncDraft(true);
+            return;
+        }
+
         const paragraph = document.createElement('p');
         paragraph.appendChild(document.createElement('br'));
         heading.insertAdjacentElement('afterend', paragraph);
